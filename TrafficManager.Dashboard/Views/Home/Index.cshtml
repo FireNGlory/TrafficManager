@@ -1,0 +1,119 @@
+﻿@{
+    ViewBag.Title = "TrafficManager - Home Page";
+}
+<style>
+    .myconsole {
+        width: 100%;
+        height: 400px;
+        overflow-y: scroll;
+        background: black;
+        color: greenyellow;
+        padding-left: 4px;
+        margin-right: 2px;
+        font-size: .8em;
+        font-family: monospace;
+    }
+    .btn-full {
+        width: 100%;
+    }
+</style>
+<div class="jumbotron">
+    <h1>Traffic Manager Builder Project</h1>
+    <p class="lead">This project was built by Ryan Mack for a Hackster.io maker contest.</p>
+    <p>
+        <a href="http://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a>
+    </p>
+</div>
+<div class="row">
+    <div class="col-md-2">
+        <button id="cmdSendStop" type="button" class="btn btn-danger btn-full">Stop Intersection</button>
+        <button id="cmdSendStart" type="button" class="btn btn-success btn-full">Start Intersection</button>
+        <button id="cmdGetStatus" type="button" class="btn btn-info btn-full">Request Status</button>
+        <button type="button" class="btn btn-primary btn-full" data-toggle="modal" data-target="#modalVars">
+            Set Variables
+        </button>
+        <button id="cmdShutdown" type="button" class="btn btn-warning btn-full">Shutdown Intersection</button>
+    </div>
+    <div class="col-md-10">
+        <div class="myconsole">Waiting for events...</div>
+    </div>
+</div>
+<div class="modal fade" id="modalVars" tabindex="-1" role="dialog" aria-labelledby="modalVarsTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalVarsTitle">Send Command</h4>
+            </div>
+            <div class="modal-body">
+                Username
+                <input type="text" id="txbUsername" value="Ryan"/>
+                Target Device Id
+                <input type="text" id="txbTargetId"/>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts {
+    <script>
+        var my = {};
+        my.intersectionId = "f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97";
+
+        $(function() {
+            my.busRHub = $.connection.busRHub;
+
+            my.busRHub.client.eventReceived = function (eventSummary) {
+                var cnsl = $(".myconsole");
+                cnsl.append("<br/>" + eventSummary);
+                cnsl.scrollTop(cnsl[0].scrollHeight);
+            };
+            $.connection.hub.start();
+
+            $("#cmdSendStop").click(my.stopIntersection);
+            $("#cmdSendStart").click(my.startIntersection);
+            $("#cmdGetStatus").click(my.getStatus);
+            $("#cmdShutdown").click(my.shutdownPi);
+        });
+
+
+        my.startIntersection = function () {
+            my.sendCommand(10010, my.intersectionId);
+        }
+        my.stopIntersection = function () {
+            my.sendCommand(10999, my.intersectionId);
+        }
+        my.getStatus = function () {
+            var target = $("#txbTargetId").val();
+
+            if (target === "") {
+                $("#modalVars").modal("show");
+                return;
+            }
+            my.sendCommand(10020, target);
+        }
+        my.shutdownPi = function () {
+            my.sendCommand(19999, my.intersectionId);
+        }
+
+        my.sendCommand = function(cmdId, targetId, arg) {
+            my.busRHub.server.sendCommand($("#txbUsername").val(), cmdId, targetId, arg);
+        }
+    </script>
+}
+@*
+    BringOnline = 10010,
+    RequestStatus = 10020,
+    UpdateRoutePreference = 10030,
+    ReplaceBulb = 10040,
+    ReplaceSensor = 10045,
+    SimulateBulbFailure = 10810,
+    SimulateSensorFailure = 10820,
+    TakeOffline = 10999,
+    Shutdown = 19999
+    
+*@
