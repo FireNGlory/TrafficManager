@@ -1,0 +1,202 @@
+﻿@{
+    ViewBag.Title = "TrafficManager - Graphical Demo";
+}
+<style>
+    .myconsole {
+        width: 100%;
+        height: 400px;
+        overflow-y: scroll;
+        background: black;
+        color: greenyellow;
+        padding-left: 4px;
+        margin-right: 2px;
+        font-size: .8em;
+        font-family: monospace;
+    }
+
+    .btn-full {
+        width: 100%;
+    }
+    .intersectionContainer {
+        padding: 0 0 0 0 !important;
+        height: 800px !important;
+        width: 800px !important;
+        background-image: url('../../Content/4way.png');
+    }
+
+    .light {
+        position: absolute;
+        padding: 0 0 0 0 !important;
+        height: 65px !important;
+        width: 65px !important;
+        display: none;
+    }
+    .northGreen {
+        background-image: url('../../Content/green.png');    
+        top: 15px;
+        left: 307px;
+    }
+    .northYellow {
+        background-image: url('../../Content/yellow.png');
+        top: 83px;
+        left: 307px;
+    }
+    .northRed {
+        background-image: url('../../Content/red.png');
+        top: 151px;
+        left: 307px;
+    }
+    .southGreen {
+        background-image: url('../../Content/green.png');    
+        top: 576px;
+        left: 456px;
+    }
+    .southYellow {
+        background-image: url('../../Content/yellow.png');
+        top: 644px;
+        left: 456px;
+    }
+    .southRed {
+        background-image: url('../../Content/red.png');
+        top: 712px;
+        left: 456px;
+    }
+    .eastGreen {
+        background-image: url('../../Content/green.png');    
+        top: 289px;
+        left: 725px;
+    }
+    .eastYellow {
+        background-image: url('../../Content/yellow.png');
+        top: 289px;
+        left: 657px;
+    }
+    .eastRed {
+        background-image: url('../../Content/red.png');
+        top: 289px;
+        left: 590px;
+    }
+    .westGreen {
+        background-image: url('../../Content/green.png');    
+        top: 444px;
+        left: 42px;
+    }
+    .westYellow {
+        background-image: url('../../Content/yellow.png');
+        top: 444px;
+        left: 110px;
+    }
+    .westRed {
+        background-image: url('../../Content/red.png');
+        top: 444px;
+        left: 179px;
+    }
+
+</style>
+<div class="row">
+    <div class="col-md-2">
+        <button id="cmdSendStop" type="button" class="btn btn-danger btn-full">Stop Intersection</button>
+        <button id="cmdSendStart" type="button" class="btn btn-success btn-full">Start Intersection</button>
+        <button id="cmdGetStatus" type="button" class="btn btn-info btn-full">Request Status</button>
+        <button type="button" class="btn btn-primary btn-full" data-toggle="modal" data-target="#modalVars">
+            Set Variables
+        </button>
+        <button id="cmdShutdown" type="button" class="btn btn-warning btn-full">Shutdown Intersection</button>
+    </div>
+    <div class="col-md-10">
+        <div class="intersectionContainer">
+            <div id="8b6bd075-7576-43a2-adc8-4ec36f914297" class="light northGreen"></div>
+            <div id="01478f65-93c7-46d9-be64-a55f383296f9" class="light northYellow"></div>
+            <div id="bdd4c02b-11d3-4ed5-8d34-6ef2e85c804b" class="light northRed"></div>
+
+            <div id="249f351b-b43d-4864-bad7-d9f19cd7c161" class="light southGreen"></div>
+            <div id="a8fbf9ca-aab6-4f84-95f4-f8c1134cacb5" class="light southYellow"></div>
+            <div id="16a97bd3-0661-47d4-a314-e7ab62162fca" class="light southRed"></div>
+
+            <div id="c5ef56ca-a594-41bc-8c24-2655944a752b" class="light eastGreen"></div>
+            <div id="0bd1fbe0-ded5-410d-8cb5-887111c01630" class="light eastYellow"></div>
+            <div id="3e48ed9c-813d-4cef-93d2-216f4d32fd1d" class="light eastRed"></div>
+
+            <div id="03d9e044-6aee-46df-994b-0fe3fe5fefc5" class="light westGreen"></div>
+            <div id="1b743ee7-d375-44a7-924f-9b7b0e070a95" class="light westYellow"></div>
+            <div id="dcce1d40-45c3-4edf-9023-73b5d9261886" class="light westRed"></div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalVars" tabindex="-1" role="dialog" aria-labelledby="modalVarsTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalVarsTitle">Send Command</h4>
+            </div>
+            <div class="modal-body">
+                Username
+                <input type="text" id="txbUsername" value="Ryan" />
+                Target Device Id
+                <input type="text" id="txbTargetId" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts {
+    <script>
+        var my = {};
+        my.intersectionId = "f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97";
+
+        $(function() {
+            my.busRHub = $.connection.busRHub;
+
+            my.busRHub.client.bulbChange = function (id, isOn) {
+                $("#" + id).toggle(isOn);
+            };
+            $.connection.hub.start();
+
+            $("#cmdSendStop").click(my.stopIntersection);
+            $("#cmdSendStart").click(my.startIntersection);
+            $("#cmdGetStatus").click(my.getStatus);
+            $("#cmdShutdown").click(my.shutdownPi);
+        });
+
+
+        my.startIntersection = function () {
+            my.sendCommand(10010, my.intersectionId);
+        }
+        my.stopIntersection = function () {
+            my.sendCommand(10999, my.intersectionId);
+        }
+        my.getStatus = function () {
+            var target = $("#txbTargetId").val();
+
+            if (target === "") {
+                $("#modalVars").modal("show");
+                return;
+            }
+            my.sendCommand(10020, target);
+        }
+        my.shutdownPi = function () {
+            my.sendCommand(19999, my.intersectionId);
+        }
+
+        my.sendCommand = function(cmdId, targetId, arg) {
+            my.busRHub.server.sendCommand($("#txbUsername").val(), cmdId, targetId, arg);
+        }
+    </script>
+}
+@*
+    BringOnline = 10010,
+    RequestStatus = 10020,
+    UpdateRoutePreference = 10030,
+    ReplaceBulb = 10040,
+    ReplaceSensor = 10045,
+    SimulateBulbFailure = 10810,
+    SimulateSensorFailure = 10820,
+    TakeOffline = 10999,
+    Shutdown = 19999
+
+*@

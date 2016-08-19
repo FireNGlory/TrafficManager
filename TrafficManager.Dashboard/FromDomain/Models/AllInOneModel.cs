@@ -1,4 +1,5 @@
 ﻿using System;
+using TrafficManager.Dashboard.Domain;
 using TrafficManager.Domain.Reference;
 
 namespace TrafficManager.Domain.Models
@@ -19,7 +20,7 @@ namespace TrafficManager.Domain.Models
         public decimal UsageFactorOne { get; set; }
         public decimal UsageFactorTwo { get; set; }
 
-        public override string ToString()
+        public string ToString(IRepoDeviceMetadata deviceRepo)
         {
             int cs;
             int.TryParse(CurrentState, out cs);
@@ -41,12 +42,13 @@ namespace TrafficManager.Domain.Models
 
             var stream = (EventStreamEnum)EventStream;
             var errorNote = IsError ? " ***ERROR*** " : "";
+            var meta = deviceRepo.GetByDeviceId(DeviceId ?? IntersectionId ?? Guid.Empty);
+
             var msg =
-                $"{Timestamp.ToString("yyyy-MM-dd HH:mm:ss")}Z - {errorNote}{stream}: {DeviceType}({DeviceId ?? IntersectionId})";
+                $"{Timestamp.ToString("yyyy-MM-dd HH:mm:ss")}Z - {errorNote}{stream}: {meta?.FriendlyName}({meta?.DeviceType})";
             if (!string.IsNullOrWhiteSpace(Function)) msg = string.Concat(msg, $" - Function: {Function}");
             if (!string.IsNullOrWhiteSpace(Description)) msg = string.Concat(msg, $" - Description: {Description}");
             if (!string.IsNullOrWhiteSpace(CurrentState)) msg = string.Concat(msg, $" - CurrentState: {CurrentState}");
-            if (ParentDeviceId.HasValue) msg = string.Concat(msg, $" - ParentDeviceId: {ParentDeviceId}");
             if (ParentDeviceId.HasValue) msg = string.Concat(msg, $" - ParentDeviceId: {ParentDeviceId}");
             if (!string.IsNullOrWhiteSpace(Message)) msg = string.Concat(msg, $" - Message: {Message}");
             if (!string.IsNullOrWhiteSpace(OldState)) msg = string.Concat(msg, $" - OldState: {OldState}");

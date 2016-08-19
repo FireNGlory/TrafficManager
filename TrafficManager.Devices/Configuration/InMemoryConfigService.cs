@@ -31,12 +31,12 @@ namespace TrafficManager.Devices.Configuration
                 EastGreenBulbSensorId = new Guid("0035ee67-d89f-4a9e-be41-91bdac838a78"),
 
                 EastWestRouteId = new Guid("bfbe2082-4be5-427b-9f2c-fb5e4692ceec"),
+                NorthSouthRouteId = new Guid("47365541-2882-4814-b5f1-94361c09d58c"),
                 NorthLampId = new Guid("d22c0c30-35a3-439d-b505-2b395b87104e"),
                 NorthLampSetId = new Guid("0fc50ef3-ad24-4d63-b152-b712903e8607"),
                 NorthRedBulbId = new Guid("bdd4c02b-11d3-4ed5-8d34-6ef2e85c804b"),
                 NorthRedBulbPinId = 13,
                 NorthRedBulbSensorId = new Guid("26ebd133-7fa6-46b0-8a7f-5734622cc70c"),
-                NorthSouthRouteId = new Guid("47365541-2882-4814-b5f1-94361c09d58c"),
                 NorthYellowBulbId = new Guid("01478f65-93c7-46d9-be64-a55f383296f9"),
                 NorthYellowBulbPinId = 19,
                 NorthYellowBulbSensorId = new Guid("b2f1e17d-52e7-480d-862a-639e98066f29"),
@@ -68,6 +68,7 @@ namespace TrafficManager.Devices.Configuration
                 WestGreenBulbPinId = 6,
                 WestGreenBulbSensorId = new Guid("00f26339-b3de-4630-bca2-4b9f24cc132c")
             };
+
         }
         public Task<ConfigurationSettings> ReadConfig()
         {

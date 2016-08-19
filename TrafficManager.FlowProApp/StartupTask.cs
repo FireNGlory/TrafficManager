@@ -204,7 +204,7 @@ namespace TrafficManager.FlowProApp
                 _wSet = new BasicLampSet(cfg.WestLampSetId, new List<ILamp> { _wLamp }, 270, true);
 
                 //Establish the lamp sets on traffic routes
-                _nsRoute = new BasicTrafficRoute(Guid.NewGuid(), 5, false, new List<ILampSet> { _nSet, _sSet });
+                _nsRoute = new BasicTrafficRoute(cfg.NorthSouthRouteId, 5, false, new List<ILampSet> { _nSet, _sSet });
 
                 _nsRoute.TransitionRightOfWay().Wait();
                 await Task.Delay(1000);
@@ -212,7 +212,7 @@ namespace TrafficManager.FlowProApp
                 await Task.Delay(1000);
 
 
-                _ewRoute = new BasicTrafficRoute(Guid.NewGuid(), 0, true, new List<ILampSet> { _eSet, _wSet });
+                _ewRoute = new BasicTrafficRoute(cfg.EastWestRouteId, 0, true, new List<ILampSet> { _eSet, _wSet });
 
                 _ewRoute.TransitionRightOfWay().Wait();
                 await Task.Delay(1000);
@@ -356,7 +356,7 @@ namespace TrafficManager.FlowProApp
             bulbs.ForEach(s => s.StateChanged += (sender, args) =>
             {
                 //Only report inop
-                if (args.NewState != 9999 && args.OldState != 9999) return;
+                //if (args.NewState != 9999 && args.OldState != 9999) return;
 
                 var oldS = (BulbStateEnum)args.OldState;
                 var newS = (BulbStateEnum)args.NewState;

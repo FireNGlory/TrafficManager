@@ -46,7 +46,14 @@ namespace TrafficManager.Devices.ServiceBus
             _myClient = DeviceClient.Create(cfg.AzureIoTHubUri, auth, TransportType.Http1);
 
             _listener = Listener(_tSource);
-            _batchTimer = Task.Run(() => { });
+            _batchTimer = Task.Run(() =>
+            {
+                while (true)
+                {
+                    Task.Delay(TimeSpan.FromSeconds(10)).Wait();
+                    _sendTasks.RemoveAll(t => t?.AsTask() == null || t.AsTask().IsCompleted);
+                }
+            });
         }
 
         public static AllInOneHubService Instance()
@@ -157,7 +164,7 @@ namespace TrafficManager.Devices.ServiceBus
             var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg));
             var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
 
-            _sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
+            //_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
 
             _sendTasks.Add(_myClient.SendEventAsync(message));
 
@@ -183,7 +190,7 @@ namespace TrafficManager.Devices.ServiceBus
 
             _sendTasks.Add(_myClient.SendEventBatchAsync(messages));
 
-            _sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
+            //_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
         }
 
         private void StartTimer()

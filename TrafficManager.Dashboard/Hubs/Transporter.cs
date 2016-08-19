@@ -7,21 +7,23 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.Azure.Devices;
 using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
+using TrafficManager.Dashboard.Domain;
 using TrafficManager.Domain.Models;
 using TrafficManager.Domain.Models.Commands;
+using TrafficManager.Domain.Reference;
 
 namespace TrafficManager.Dashboard.Hubs
 {
-    public class Transporter : IDisposable
+    public class Transporter : ITransporter
     {
-        private static Transporter _instance;
-
+        private readonly IRepoDeviceMetadata _deviceRepo;
         private readonly CancellationTokenSource _tokenSrc = new CancellationTokenSource();
         private readonly ServiceClient _serviceClt;
         private readonly List<Task> _sbTasks = new List<Task>();
 
-        private Transporter()
+        public Transporter(IRepoDeviceMetadata deviceRepo)
         {
+            _deviceRepo = deviceRepo;
             const string connectionString = "HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
             const string iotHubToClientEndpoint = "messages/events";
 
@@ -33,13 +35,9 @@ namespace TrafficManager.Dashboard.Hubs
             {
                 var receiver = eventHubClient
                     .GetDefaultConsumerGroup()
-                    .CreateReceiver(partition, DateTime.Now);
+                    .CreateReceiver(partition, DateTime.UtcNow.AddMinutes(-10));
                 _sbTasks.Add(Listen(receiver));
             }
-        }
-        public static Transporter Instance()
-        {
-            return _instance ?? (_instance = new Transporter());
         }
 
         public void SendCommand(string deviceId, SystemCommandModel cmd)
@@ -60,11 +58,22 @@ namespace TrafficManager.Dashboard.Hubs
 
                 var theEvent = JsonConvert.DeserializeObject<AllInOneModelDto>(data).ToFullModel() as AllInOneModel;
 
+                if (theEvent == null) continue;
+
+                var stream = (EventStreamEnum)theEvent.EventStream;
+
                 var ctx = GlobalHost.ConnectionManager.GetHubContext<BusRHub>();
-                ctx.Clients.All.eventReceived(theEvent?.ToString());
+                ctx.Clients.All.eventReceived(theEvent.ToString(_deviceRepo));
+
+                if (stream != EventStreamEnum.StateChange) continue;
+
+                var dev = _deviceRepo.GetByDeviceId(theEvent.DeviceId ?? theEvent.IntersectionId ?? Guid.Empty);
+
+                if (dev?.DeviceType == "Bulb")
+                    ctx.Clients.All.bulbChange(dev.DeviceId, theEvent.NewState == "On" || theEvent.NewState == "AssumedOn");
             }
         }
-        
+
         public void Dispose()
         {
             Dispose(true);
@@ -75,7 +84,7 @@ namespace TrafficManager.Dashboard.Hubs
             if (!disposing) return;
 
             _tokenSrc.Cancel(false);
-
+            
             Task.WaitAll(_sbTasks.ToArray());
 
         }

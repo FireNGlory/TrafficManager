@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficManager.Devices", "T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficManager.Dashboard", "TrafficManager.Dashboard\TrafficManager.Dashboard.csproj", "{0ED123A3-98B5-4DB5-9F81-B97935A24314}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficManager.Dashboard.Domain", "TrafficManager.Dashboard.Domain\TrafficManager.Dashboard.Domain.csproj", "{FC35B257-F264-4FBF-A98C-818BF747634E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,6 +107,22 @@ Global
 		{0ED123A3-98B5-4DB5-9F81-B97935A24314}.Release|x64.Build.0 = Release|Any CPU
 		{0ED123A3-98B5-4DB5-9F81-B97935A24314}.Release|x86.ActiveCfg = Release|Any CPU
 		{0ED123A3-98B5-4DB5-9F81-B97935A24314}.Release|x86.Build.0 = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|ARM.Build.0 = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|x64.Build.0 = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Debug|x86.Build.0 = Debug|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|ARM.ActiveCfg = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|ARM.Build.0 = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|x64.ActiveCfg = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|x64.Build.0 = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|x86.ActiveCfg = Release|Any CPU
+		{FC35B257-F264-4FBF-A98C-818BF747634E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

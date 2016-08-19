@@ -8,5 +8,9 @@ namespace TrafficManager.Dashboard.Controllers
         {
             return View();
         }
+        public ActionResult Graphic()
+        {
+            return View();
+        }
     }
 }
