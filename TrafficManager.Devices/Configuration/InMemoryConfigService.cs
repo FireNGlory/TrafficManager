@@ -14,7 +14,7 @@ namespace TrafficManager.Devices.Configuration
             {
                 AzureIoTHubUri = "PieceOfPiHub.azure-devices.net",
                 AzureIoTDeviceId = "PieceOfPiDevice",
-                AzureIoTDeviceKey = "gXI+jr3De1/490XalZiTVVV8vXMshA93vLmyYS5qndI=",
+                AzureIoTDeviceKey = "{DeviceKey}",
 
                 IntersectionId = new Guid("f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97"),
 

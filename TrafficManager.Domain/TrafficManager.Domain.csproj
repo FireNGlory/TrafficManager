@@ -113,6 +113,9 @@
     <Compile Include="Models\AllInOneModel.cs" />
     <Compile Include="Models\AllInOneModelDto.cs" />
     <Compile Include="Models\AnomolyModel.cs" />
+    <Compile Include="Models\AzureCommandInfo.cs" />
+    <Compile Include="Models\AzureCommandParams.cs" />
+    <Compile Include="Models\AzureDeviceInfo.cs" />
     <Compile Include="Models\Commands\SystemCommandModel.cs" />
     <Compile Include="Models\DeviceSummaryModel.cs" />
     <Compile Include="Models\DirectoryUpdateModel.cs" />
@@ -143,7 +146,7 @@
     <Compile Include="Reference\LampStateEnum.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reference\Args\StateChangedEventArgs.cs" />
-    <Compile Include="Reference\DeviceSummary.cs" />
+    <Compile Include="ValueTypes\DeviceSummary.cs" />
     <EmbeddedResource Include="Properties\TrafficManager.Domain.rd.xml" />
   </ItemGroup>
   <ItemGroup />

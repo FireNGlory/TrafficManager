@@ -63,13 +63,15 @@ namespace TrafficManager.FlowProApp
 
             var cfg = await _cfgSvc.ReadConfig();
 
-            InitGpio(cfg).Wait(_tSource.Token);
+            _eventor.SendOnline();
 
+            InitGpio(cfg).Wait(_tSource.Token);
+            
             BindEvents();
 
             _eventor.CommandReceived += EventorOnCommandReceived;
             _theIntersection.Start();
-
+            
             while (!_tSource.Token.IsCancellationRequested)
                 await Task.Delay(TimeSpan.FromHours(1), _tSource.Token);
 
@@ -86,14 +88,19 @@ namespace TrafficManager.FlowProApp
 
         private void EventorOnCommandReceived(object sender, CommandReceivedEventArgs args)
         {
+            Guid? targetId = null;
+
+            if (args.Parameters.Any(p => p.Key == "targetId"))
+                targetId = new Guid(args.Parameters.First(p => p.Key == "targetId").Value.ToString());
+
             _eventor.SendLogMessage(_theIntersection.Id, false, 
-                $"Received {args.Command} command from {args.FromUser} for {args.TargetId}", DateTime.UtcNow);
+                $"Received {args.Command} command  for {targetId}", DateTime.UtcNow);
 
 
-            var workBulb = _nBulbs.FirstOrDefault(b => b.MyCurrentSensor.Id == args.TargetId)
-                       ?? _sBulbs.FirstOrDefault(b => b.MyCurrentSensor.Id == args.TargetId)
-                       ?? _eBulbs.FirstOrDefault(b => b.MyCurrentSensor.Id == args.TargetId)
-                       ?? _wBulbs.FirstOrDefault(b => b.MyCurrentSensor.Id == args.TargetId);
+            var workBulb = _nBulbs.FirstOrDefault(b => b.Id == targetId)
+                       ?? _sBulbs.FirstOrDefault(b => b.Id == targetId)
+                       ?? _eBulbs.FirstOrDefault(b => b.Id == targetId)
+                       ?? _wBulbs.FirstOrDefault(b => b.Id == targetId);
 
             ITrafficRoute workRoute;
             switch (args.Command)
@@ -105,10 +112,10 @@ namespace TrafficManager.FlowProApp
                     break;
                 case SystemCommandEnum.RequestStatus:
 
-                    var lamp = _nSet.Lamps.FirstOrDefault(l => l.Id == args.TargetId)
-                                ?? _sSet.Lamps.FirstOrDefault(l => l.Id == args.TargetId)
-                                ?? _eSet.Lamps.FirstOrDefault(l => l.Id == args.TargetId)
-                                ?? _wSet.Lamps.FirstOrDefault(l => l.Id == args.TargetId);
+                    var lamp = _nSet.Lamps.FirstOrDefault(l => l.Id == targetId)
+                                ?? _sSet.Lamps.FirstOrDefault(l => l.Id == targetId)
+                                ?? _eSet.Lamps.FirstOrDefault(l => l.Id == targetId)
+                                ?? _wSet.Lamps.FirstOrDefault(l => l.Id == targetId);
 
                     if (lamp != null)
                     {
@@ -118,8 +125,8 @@ namespace TrafficManager.FlowProApp
                         return;
                     }
 
-                    var workSet = _nsRoute.LampSets.FirstOrDefault(s => s.Id == args.TargetId)
-                                ?? _ewRoute.LampSets.FirstOrDefault(s => s.Id == args.TargetId);
+                    var workSet = _nsRoute.LampSets.FirstOrDefault(s => s.Id == targetId)
+                                ?? _ewRoute.LampSets.FirstOrDefault(s => s.Id == targetId);
 
                     if (workSet != null)
                     {
@@ -129,7 +136,7 @@ namespace TrafficManager.FlowProApp
                         return;
                     }
 
-                    workRoute = _theIntersection.TrafficRoutes.FirstOrDefault(r => r.Id == args.TargetId);
+                    workRoute = _theIntersection.TrafficRoutes.FirstOrDefault(r => r.Id == targetId);
 
                     if (workRoute != null)
                     {
@@ -139,16 +146,24 @@ namespace TrafficManager.FlowProApp
                         return;
                     }
 
-                    if (_theIntersection.Id == args.TargetId)
+                    if (_theIntersection.Id == targetId)
                         _theIntersection.GetSummaries().ContinueWith(r =>
                         _eventor.SendSummaryUpdates(r.Result)
                         ).Wait(); 
 
                     break;
                 case SystemCommandEnum.UpdateRoutePreference:
-                    workRoute = _theIntersection.TrafficRoutes.FirstOrDefault(r => r.Id == args.TargetId);
+                    workRoute = _theIntersection.TrafficRoutes.FirstOrDefault(r => r.Id == targetId);
                     if (workRoute == null) return;
-                    workRoute.UpdatePreferenceMetric(int.Parse(args.Arg1));
+
+                    int? newPreference;
+
+                    if (args.Parameters.Any(p => p.Key == "preference"))
+                        newPreference = (int) args.Parameters.First(p => p.Key == "preference").Value;
+                    else
+                        return;
+
+                    workRoute.UpdatePreferenceMetric(newPreference.Value);
                     break;
                 case SystemCommandEnum.ReplaceBulb:
                     if (workBulb == null) return;
@@ -156,11 +171,11 @@ namespace TrafficManager.FlowProApp
                     break;
                 case SystemCommandEnum.ReplaceSensor:
                     if (workBulb == null) return;
-                    workBulb.MyCurrentSensor.MarkInOp(true);
+                    workBulb.MyCurrentSensor.MarkInOp(false);
                     break;
                 case SystemCommandEnum.SimulateBulbFailure:
                     if (workBulb == null) return;
-                    workBulb.MarkInOp(false);
+                    workBulb.MarkInOp(true);
                     break;
                 case SystemCommandEnum.SimulateSensorFailure:
                     if (workBulb == null) return;
@@ -252,34 +267,25 @@ namespace TrafficManager.FlowProApp
 
 
                 //The rest of the lamps are simulated on the breadboard with LEDs
-                _sBulbs.Add(new LedWithoutSensor(cfg.SouthRedBulbId, BulbTypeEnum.Red, new MockSensor(cfg.SouthRedBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.SouthRedBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _sBulbs.Add(new LedWithoutSensor(cfg.SouthRedBulbId, BulbTypeEnum.Red, cfg.SouthRedBulbSensorId,
                     gpio.OpenPin(cfg.SouthRedBulbPinId)));
-                _sBulbs.Add(new LedWithoutSensor(cfg.SouthYellowBulbId, BulbTypeEnum.Yellow, new MockSensor(cfg.SouthYellowBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.SouthYellowBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _sBulbs.Add(new LedWithoutSensor(cfg.SouthYellowBulbId, BulbTypeEnum.Yellow, cfg.SouthYellowBulbSensorId,
                     gpio.OpenPin(cfg.SouthYellowBulbPinId)));
-                _sBulbs.Add(new LedWithoutSensor(cfg.SouthGreenBulbId, BulbTypeEnum.Green, new MockSensor(cfg.SouthGreenBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.SouthGreenBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _sBulbs.Add(new LedWithoutSensor(cfg.SouthGreenBulbId, BulbTypeEnum.Green, cfg.SouthGreenBulbSensorId,
                     gpio.OpenPin(cfg.SouthGreenBulbPinId)));
 
-                _eBulbs.Add(new LedWithoutSensor(cfg.EastRedBulbId, BulbTypeEnum.Red, new MockSensor(cfg.EastRedBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.EastRedBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _eBulbs.Add(new LedWithoutSensor(cfg.EastRedBulbId, BulbTypeEnum.Red, cfg.EastRedBulbSensorId,
                     gpio.OpenPin(cfg.EastRedBulbPinId)));
-                _eBulbs.Add(new LedWithoutSensor(cfg.EastYellowBulbId, BulbTypeEnum.Yellow, new MockSensor(cfg.EastYellowBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.EastYellowBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _eBulbs.Add(new LedWithoutSensor(cfg.EastYellowBulbId, BulbTypeEnum.Yellow, cfg.EastYellowBulbSensorId,
                     gpio.OpenPin(cfg.EastYellowBulbPinId)));
-                _eBulbs.Add(new LedWithoutSensor(cfg.EastGreenBulbId, BulbTypeEnum.Green, new MockSensor(cfg.EastGreenBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.EastGreenBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _eBulbs.Add(new LedWithoutSensor(cfg.EastGreenBulbId, BulbTypeEnum.Green, cfg.EastGreenBulbSensorId,
                     gpio.OpenPin(cfg.EastGreenBulbPinId)));
 
-                _wBulbs.Add(new LedWithoutSensor(cfg.WestRedBulbId, BulbTypeEnum.Red, new MockSensor(cfg.WestRedBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.WestRedBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _wBulbs.Add(new LedWithoutSensor(cfg.WestRedBulbId, BulbTypeEnum.Red, cfg.WestRedBulbSensorId,
                     gpio.OpenPin(cfg.WestRedBulbPinId)));
-                _wBulbs.Add(new LedWithoutSensor(cfg.WestYellowBulbId, BulbTypeEnum.Yellow, new MockSensor(cfg.WestYellowBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.WestYellowBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _wBulbs.Add(new LedWithoutSensor(cfg.WestYellowBulbId, BulbTypeEnum.Yellow, cfg.WestYellowBulbSensorId,
                     gpio.OpenPin(cfg.WestYellowBulbPinId)));
-                _wBulbs.Add(new LedWithoutSensor(cfg.WestGreenBulbId, BulbTypeEnum.Green, new MockSensor(cfg.WestGreenBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.WestGreenBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _wBulbs.Add(new LedWithoutSensor(cfg.WestGreenBulbId, BulbTypeEnum.Green, cfg.WestGreenBulbSensorId,
                     gpio.OpenPin(cfg.WestGreenBulbPinId)));
 
                 var t = new[]
@@ -355,9 +361,6 @@ namespace TrafficManager.FlowProApp
 
             bulbs.ForEach(s => s.StateChanged += (sender, args) =>
             {
-                //Only report inop
-                //if (args.NewState != 9999 && args.OldState != 9999) return;
-
                 var oldS = (BulbStateEnum)args.OldState;
                 var newS = (BulbStateEnum)args.NewState;
 
@@ -371,13 +374,8 @@ namespace TrafficManager.FlowProApp
 
             lamps.ForEach(s => s.StateChanged += (sender, args) =>
             {
-                //Only report inop or malfunction
                 var oldS = (LampStateEnum)args.OldState;
                 var newS = (LampStateEnum)args.NewState;
-
-                if (oldS != LampStateEnum.InOperable && oldS != LampStateEnum.InOperable 
-                    && oldS != LampStateEnum.CriticalMalfunction && oldS != LampStateEnum.CriticalMalfunction)
-                    return;
 
                 _eventor.SendStateChangeEvent(args.SourceId, "Lamp", oldS.ToString(), newS.ToString(), args.SourceTimestamp);
             });

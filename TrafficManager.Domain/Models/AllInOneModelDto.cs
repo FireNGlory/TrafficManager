@@ -6,7 +6,7 @@ namespace TrafficManager.Domain.Models
     {
         public AllInOneModelDto() { }
 
-        public AllInOneModelDto(AllInOneModel fullModel)
+        public AllInOneModelDto(AllInOneModel fullModel, string iotDeviceId)
         {
             sn = fullModel.EventStream;
             ts = fullModel.Timestamp;
@@ -20,22 +20,21 @@ namespace TrafficManager.Domain.Models
             err = fullModel.IsError;
             msg = fullModel.Message;
             os = fullModel.OldState;
-            ns = fullModel.NewState;
             u1 = fullModel.UsageFactorOne;
             u2 = fullModel.UsageFactorTwo;
         }
 
+        public string DeviceId { get; set; }
         public Guid? id { get; set; }
         public string dt { get; set; }
         public Guid? iid { get; set; }
         public string fn { get; set; }
         public string dsc { get; set; }
-        public string cs { get; set; }
         public Guid? pid { get; set; }
         public bool err { get; set; }
         public string msg { get; set; }
         public string os { get; set; }
-        public string ns { get; set; }
+        public string cs { get; set; }
         public decimal u1 { get; set; }
         public decimal u2 { get; set; }
 
@@ -50,12 +49,11 @@ namespace TrafficManager.Domain.Models
                 IntersectionId = iid,
                 Function = fn,
                 Description = dsc,
-                CurrentState = cs,
                 ParentDeviceId = pid,
                 IsError = err,
                 Message = msg,
                 OldState = os,
-                NewState = ns,
+                CurrentState = cs,
                 UsageFactorOne = u1,
                 UsageFactorTwo = u2
             };

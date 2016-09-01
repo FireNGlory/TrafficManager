@@ -14,6 +14,7 @@ using TrafficManager.Domain.Models.Commands;
 using TrafficManager.Domain.Reference;
 using TrafficManager.Domain.Reference.Args;
 using TrafficManager.Domain.Services;
+using TrafficManager.Domain.ValueTypes;
 
 namespace TrafficManager.Devices.ServiceBus
 {
@@ -25,6 +26,7 @@ namespace TrafficManager.Devices.ServiceBus
 
         private readonly Task _listener;
         private readonly DeviceClient _myClient;
+        private readonly string _iotDeviceId;
         private readonly List<IAsyncAction> _sendTasks = new List<IAsyncAction>();
         private readonly CancellationTokenSource _tSource = new CancellationTokenSource();
         private readonly ICollection<Message> _messageBuffer = new List<Message>();
@@ -43,6 +45,8 @@ namespace TrafficManager.Devices.ServiceBus
             var auth = AuthenticationMethodFactory.CreateAuthenticationWithRegistrySymmetricKey(cfg.AzureIoTDeviceId,
                 cfg.AzureIoTDeviceKey);
 
+            _iotDeviceId = cfg.AzureIoTDeviceId;
+
             _myClient = DeviceClient.Create(cfg.AzureIoTHubUri, auth, TransportType.Http1);
 
             _listener = Listener(_tSource);
@@ -59,6 +63,14 @@ namespace TrafficManager.Devices.ServiceBus
         public static AllInOneHubService Instance()
         {
             return _instance ?? (_instance = new AllInOneHubService());
+        }
+
+        public void SendOnline()
+        {
+            var serialMsg = JsonConvert.SerializeObject(new AzureDeviceInfo(_iotDeviceId));
+            var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
+            
+            _sendTasks.Add(_myClient.SendEventAsync(message));
         }
 
         public void UpdateDirectory(Guid deviceId, string deviceType, string deviceName, Guid? parentId)
@@ -80,7 +92,7 @@ namespace TrafficManager.Devices.ServiceBus
                 Timestamp = timestamp,
                 DeviceId = deviceId,
                 OldState = oldState,
-                NewState = newState,
+                CurrentState = newState,
                 DeviceType = deviceType
             });
         }
@@ -104,8 +116,8 @@ namespace TrafficManager.Devices.ServiceBus
 
             while (childList.Any())
             {
-                childList = childList.SelectMany(s => s.ChildSummaries).ToList();
                 flatList.AddRange(childList);
+                childList = childList.SelectMany(s => s.ChildSummaries).ToList();
             }
 
             ICollection<AllInOneModel> msgList = flatList.Select(s => new AllInOneModel
@@ -137,7 +149,7 @@ namespace TrafficManager.Devices.ServiceBus
                 Timestamp = timeStamp,
                 IntersectionId = intersectionId,
                 OldState = oldRoWRouteId.ToString(),
-                NewState = newRoWRouteId.ToString()
+                CurrentState = newRoWRouteId.ToString()
             });
         }
 
@@ -161,7 +173,7 @@ namespace TrafficManager.Devices.ServiceBus
         {
             msg.EventStream = (int)streamId;
 
-            var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg));
+            var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg, _iotDeviceId));
             var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
 
             //_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
@@ -182,7 +194,7 @@ namespace TrafficManager.Devices.ServiceBus
             {
                 msg.EventStream = (int)streamId;
 
-                var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg));
+                var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg, _iotDeviceId));
                 var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
 
                 messages.Add(message);
@@ -231,19 +243,25 @@ namespace TrafficManager.Devices.ServiceBus
                 var cmd = JsonConvert.DeserializeObject<SystemCommandModel>(msg);
 
                 if (cmd != null) OnCommandReceived(cmd);
-
+                
                 await _myClient.CompleteAsync(receivedMessage);
             }
         }
 
         protected virtual void OnCommandReceived(SystemCommandModel theCmd)
         {
+
+            SystemCommandEnum theEnum;
+            Enum.TryParse(theCmd.Name, true, out theEnum);
+
+            if (theEnum == SystemCommandEnum.None) return;
+
+            var paramList = theCmd.Parameters ?? new List<KeyValuePair<string, object>>();
+
             CommandReceived?.Invoke(this, new CommandReceivedEventArgs
             {
-                FromUser = theCmd.FromUser,
-                Command = theCmd.RequestedCommand,
-                TargetId = theCmd.TargetId,
-                Arg1 = theCmd.Arg1
+                Command = theEnum,
+                Parameters = paramList
             });
         }
 

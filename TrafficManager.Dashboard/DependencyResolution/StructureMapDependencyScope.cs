@@ -66,7 +66,7 @@ namespace TrafficManager.Dashboard.DependencyResolution {
         private HttpContextBase HttpContext {
             get {
                 var ctx = Container.TryGetInstance<HttpContextBase>();
-                return ctx ?? new HttpContextWrapper(System.Web.HttpContext.Current);
+                 return ctx ?? new HttpContextWrapper(System.Web.HttpContext.Current);
             }
         }
 

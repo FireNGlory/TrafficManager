@@ -55,7 +55,14 @@ namespace TrafficManager.Devices.Hardware.Base
 
         public void MarkInOp(bool broken)
         {
+            var oldState = GetState().Result;
+
             ImBroken = broken;
+
+            var newState = GetState().Result;
+
+            if (newState != oldState)
+                OnStateChanged(oldState, newState);
         }
 
         protected virtual void OnStateChanged(BulbStateEnum oldState, BulbStateEnum newState)

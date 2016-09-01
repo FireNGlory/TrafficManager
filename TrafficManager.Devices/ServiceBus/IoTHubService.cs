@@ -14,6 +14,7 @@ using TrafficManager.Domain.Models.Commands;
 using TrafficManager.Domain.Reference;
 using TrafficManager.Domain.Reference.Args;
 using TrafficManager.Domain.Services;
+using TrafficManager.Domain.ValueTypes;
 
 namespace TrafficManager.Devices.ServiceBus
 {
@@ -32,10 +33,13 @@ namespace TrafficManager.Devices.ServiceBus
 
         //This should be injected
         private readonly IConfigService _cfgSvc = new InMemoryConfigService();
+        private readonly string _iotDeviceId;
 
         private IoTHubService()
         {
             var cfg = _cfgSvc.ReadConfig().Result;
+
+            _iotDeviceId = cfg.AzureIoTDeviceId;
 
             var auth = AuthenticationMethodFactory.CreateAuthenticationWithRegistrySymmetricKey(cfg.AzureIoTDeviceId,
                 cfg.AzureIoTDeviceKey);
@@ -49,6 +53,14 @@ namespace TrafficManager.Devices.ServiceBus
         public static IoTHubService Instance()
         {
             return _instance ?? (_instance = new IoTHubService());
+        }
+
+        public void SendOnline()
+        {
+            var serialMsg = JsonConvert.SerializeObject(new AzureDeviceInfo(_iotDeviceId));
+            var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
+
+            _sendTasks.Add(_myClient.SendEventAsync(message));
         }
 
         public void UpdateDirectory(Guid deviceId, string deviceType, string deviceName, Guid? parentId)
@@ -174,7 +186,7 @@ namespace TrafficManager.Devices.ServiceBus
         private void PruneList()
         {
             if (_iAmPruning) return;
-            
+
             Task.Run(() =>
             {
                 _iAmPruning = true;
@@ -219,12 +231,17 @@ namespace TrafficManager.Devices.ServiceBus
 
         protected virtual void OnCommandReceived(SystemCommandModel theCmd)
         {
+            SystemCommandEnum theEnum;
+            Enum.TryParse(theCmd.Name, true, out theEnum);
+
+            if (theEnum == SystemCommandEnum.None) return;
+
+            var paramList = theCmd.Parameters ?? new List<KeyValuePair<string, object>>();
+
             CommandReceived?.Invoke(this, new CommandReceivedEventArgs
             {
-                FromUser = theCmd.FromUser,
-                Command = theCmd.RequestedCommand,
-                TargetId = theCmd.TargetId,
-                Arg1 = theCmd.Arg1
+                Command = theEnum,
+                Parameters = paramList
             });
         }
 

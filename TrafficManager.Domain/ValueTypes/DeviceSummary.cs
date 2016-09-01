@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TrafficManager.Domain.Reference
+namespace TrafficManager.Domain.ValueTypes
 {
     public class DeviceSummary
     {

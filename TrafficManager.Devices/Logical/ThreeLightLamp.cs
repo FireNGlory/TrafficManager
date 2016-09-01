@@ -118,7 +118,7 @@ namespace TrafficManager.Devices.Logical
 
             //Is this a valid request?
             if (requestedState != LampStateEnum.Go && requestedState != LampStateEnum.Caution && requestedState != LampStateEnum.Stop)
-                throw new Exception("Yuo can only request transitions to Go, Caution and Stop");
+                throw new Exception("You can only request transitions to Go, Caution and Stop");
 
             var oldState = await GetState();
 
@@ -131,21 +131,21 @@ namespace TrafficManager.Devices.Logical
             }
 
             //Are we in a valid state to start a transition?
-            if (oldState == LampStateEnum.CriticalMalfunction || oldState == LampStateEnum.InOperable || oldState == LampStateEnum.Transitioning)
+            if (oldState == LampStateEnum.CriticalMalfunction || oldState == LampStateEnum.Transitioning)
                 ret = false;
-
+            
             //We have to go through caution before we go from green to red
             if (oldState == LampStateEnum.Go && requestedState != LampStateEnum.Caution)
                 ret = false;
 
             _iAmTransitioning = true;
 
-            //Lat's restrict to proper transitions
-            if (ret && oldState == LampStateEnum.Go && requestedState == LampStateEnum.Caution)
+            //Lat's restrict to proper transitions. InOperable is likely the bad bulb bubbling up. Try requested transition.
+            if (ret && (oldState == LampStateEnum.Go || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Caution)
                 ret = await DoTransitionToCaution();
-            else if (ret && oldState == LampStateEnum.Caution && requestedState == LampStateEnum.Stop)
+            else if (ret && (oldState == LampStateEnum.Caution || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Stop)
                 ret = await DoTransitionToStop();
-            else if (ret && oldState == LampStateEnum.Stop && requestedState == LampStateEnum.Go)
+            else if (ret && (oldState == LampStateEnum.Stop || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Go)
                 ret = await DoTransitionToGo();
             else
                 ret = false;
@@ -170,7 +170,12 @@ namespace TrafficManager.Devices.Logical
 
         private async Task<bool> DoTransitionToGo()
         {
-            if (!await GetRedLight().TransitionToState(BulbStateEnum.Off))
+            var redLight = GetRedLight();
+
+            if (await redLight.GetState() == BulbStateEnum.InOperable)
+                return await GetGreenLight().TransitionToState(BulbStateEnum.On);
+
+            if (!await redLight.TransitionToState(BulbStateEnum.Off))
                 return false;
 
             return await GetGreenLight().TransitionToState(BulbStateEnum.On);
@@ -178,7 +183,12 @@ namespace TrafficManager.Devices.Logical
 
         private async Task<bool> DoTransitionToStop()
         {
-            if (!await GetYellowLight().TransitionToState(BulbStateEnum.Off))
+            var yellowLight = GetYellowLight();
+
+            if (await yellowLight.GetState() == BulbStateEnum.InOperable)
+                return await GetRedLight().TransitionToState(BulbStateEnum.On);
+
+            if (!await yellowLight.TransitionToState(BulbStateEnum.Off))
                 return false;
 
             return await GetRedLight().TransitionToState(BulbStateEnum.On);
@@ -186,7 +196,12 @@ namespace TrafficManager.Devices.Logical
 
         private async Task<bool> DoTransitionToCaution()
         {
-            if (!await GetGreenLight().TransitionToState(BulbStateEnum.Off))
+            var greenLight = GetGreenLight();
+
+            if (await greenLight.GetState() == BulbStateEnum.InOperable)
+                return await GetYellowLight().TransitionToState(BulbStateEnum.On);
+
+            if (!await greenLight.TransitionToState(BulbStateEnum.Off))
                 return false;
 
             return await GetYellowLight().TransitionToState(BulbStateEnum.On);

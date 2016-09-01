@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TrafficManager.Domain.EventHandlers;
 using TrafficManager.Domain.Reference;
+using TrafficManager.Domain.ValueTypes;
 
 namespace TrafficManager.Domain.Services
 {
@@ -9,6 +10,7 @@ namespace TrafficManager.Domain.Services
     {
         event CommandReceivedEvent CommandReceived;
 
+        void SendOnline();
         void UpdateDirectory(Guid deviceId, string deviceType, string deviceName, Guid? parentId);
         void SendStateChangeEvent(Guid deviceId, string deviceType, string oldState, string newState, DateTime timestamp);
         void SendAnomaly(Guid intersectionId, string function, string desc, Guid? offender, DateTime timestamp);

@@ -35,7 +35,7 @@ namespace TrafficManager.Dashboard.Hubs
             {
                 var receiver = eventHubClient
                     .GetDefaultConsumerGroup()
-                    .CreateReceiver(partition, DateTime.UtcNow.AddMinutes(-10));
+                    .CreateReceiver(partition, DateTime.Now.AddMinutes(-15));
                 _sbTasks.Add(Listen(receiver));
             }
         }
@@ -65,12 +65,21 @@ namespace TrafficManager.Dashboard.Hubs
                 var ctx = GlobalHost.ConnectionManager.GetHubContext<BusRHub>();
                 ctx.Clients.All.eventReceived(theEvent.ToString(_deviceRepo));
 
+                if (stream == EventStreamEnum.Summary)
+                {
+                    ctx.Clients.All.summaryUpdate(theEvent.ToString(_deviceRepo));
+                    continue;
+                }
+
                 if (stream != EventStreamEnum.StateChange) continue;
 
                 var dev = _deviceRepo.GetByDeviceId(theEvent.DeviceId ?? theEvent.IntersectionId ?? Guid.Empty);
 
+
+                ctx.Clients.All.stateChange(dev.DeviceId, theEvent.CurrentState);
+
                 if (dev?.DeviceType == "Bulb")
-                    ctx.Clients.All.bulbChange(dev.DeviceId, theEvent.NewState == "On" || theEvent.NewState == "AssumedOn");
+                    ctx.Clients.All.bulbChange(dev.DeviceId, theEvent.CurrentState == "On" || theEvent.CurrentState == "AssumedOn");
             }
         }
 

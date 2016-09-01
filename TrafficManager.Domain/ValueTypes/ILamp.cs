@@ -7,8 +7,6 @@ namespace TrafficManager.Domain.ValueTypes
 {
     public interface ILamp : IDomainDevice
     {
-        event StateChangedEvent StateChanged;
-        
         ICollection<IBulb> Bulbs { get; }
 
         Task<LampStateEnum> GetState();

@@ -6,7 +6,6 @@ namespace TrafficManager.Domain.ValueTypes
 {
     public interface IBulb : IDomainDevice
     {
-        event StateChangedEvent StateChanged;
         event BulbCycledEvent BulbCycled;
         
         BulbTypeEnum BulbType { get; }

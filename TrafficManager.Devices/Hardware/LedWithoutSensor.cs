@@ -12,7 +12,7 @@ namespace TrafficManager.Devices.Hardware
     {
         private readonly GpioPin _gpioPin;
 
-        public LedWithoutSensor(Guid id, BulbTypeEnum bulbType, ICurrentSensor currentSensor, GpioPin gpioPin) : base(id, bulbType, currentSensor)
+        public LedWithoutSensor(Guid id, BulbTypeEnum bulbType, Guid fakeSensorId, GpioPin gpioPin) : base(id, bulbType, new MockSensor(fakeSensorId))
         {
 
             _gpioPin = gpioPin;
