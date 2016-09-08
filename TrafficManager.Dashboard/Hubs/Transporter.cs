@@ -24,7 +24,7 @@ namespace TrafficManager.Dashboard.Hubs
         public Transporter(IRepoDeviceMetadata deviceRepo)
         {
             _deviceRepo = deviceRepo;
-            const string connectionString = "HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
+            const string connectionString = "HostName=FloPro.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=ESqz5/K6toejWVXAYb5dpffFg/Fwb4zHlY40o30O1mw=";//"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
             const string iotHubToClientEndpoint = "messages/events";
 
             _serviceClt = ServiceClient.CreateFromConnectionString(connectionString);
@@ -54,15 +54,19 @@ namespace TrafficManager.Dashboard.Hubs
                 var eventData = await receiver.ReceiveAsync(TimeSpan.FromSeconds(30));
                 if (eventData == null) continue;
 
+                var ctx = GlobalHost.ConnectionManager.GetHubContext<BusRHub>();
                 var data = Encoding.UTF8.GetString(eventData.GetBytes());
 
                 var theEvent = JsonConvert.DeserializeObject<AllInOneModelDto>(data).ToFullModel() as AllInOneModel;
 
-                if (theEvent == null) continue;
+                if (theEvent == null)
+                {
+                    ctx.Clients.All.eventReceived(data);
+                    continue;
+                }
 
                 var stream = (EventStreamEnum)theEvent.EventStream;
 
-                var ctx = GlobalHost.ConnectionManager.GetHubContext<BusRHub>();
                 ctx.Clients.All.eventReceived(theEvent.ToString(_deviceRepo));
 
                 if (stream == EventStreamEnum.Summary)

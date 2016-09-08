@@ -70,7 +70,7 @@ namespace TrafficManager.Devices.ServiceBus
             var serialMsg = JsonConvert.SerializeObject(new AzureDeviceInfo(_iotDeviceId));
             var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
             
-            _sendTasks.Add(_myClient.SendEventAsync(message));
+            _myClient.SendEventAsync(message).AsTask().Wait();
         }
 
         public void UpdateDirectory(Guid deviceId, string deviceType, string deviceName, Guid? parentId)

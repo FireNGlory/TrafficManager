@@ -18,23 +18,32 @@ namespace TrafficManager.Domain.Models
             ObjectType = "DeviceInfo";
             Version = "1.0";
             IsSimulatedDevice = false;
-            DeviceProperties = new List<KeyValuePair<string, object>>
+            DeviceProperties = new AzureDeviceProperties
             {
-                new KeyValuePair<string, object>("DeviceId", deviceName),
-                new KeyValuePair<string, object>("HubEnabledState", true)
+                DeviceID = deviceName,
+                HubStateEnabled = true,
+                DeviceState = "normal",
+                FirmwareVersion = "0.1",
+                InstalledRam = "8gb",
+                Manufacturer = "RyanMack",
+                ModelNumber = "RiPi4Way",
+                Platform = "Windows IoT Core",
+                Processor = "ARM",
+                SerialNumber = "12345",
+                Latitude = 30.324608,
+                Longitude = -81.398250
             };
             Commands = new List<AzureCommandInfo>
             {
-                new AzureCommandInfo { Name = "BringOnline" },
-                new AzureCommandInfo { Name = "TakeOffline" },
-                new AzureCommandInfo { Name = "Shutdown" }
+                new AzureCommandInfo { Name = "BringOnline", Parameters = new List<AzureCommandParams>()},
+                new AzureCommandInfo { Name = "TakeOffline", Parameters = new List<AzureCommandParams>() },
+                new AzureCommandInfo { Name = "Shutdown", Parameters = new List<AzureCommandParams>() }
             };
         }
         public string ObjectType { get; set; }
         public string Version { get; set; }
         public bool IsSimulatedDevice { get; set; }
-        public ICollection<KeyValuePair<string, object>> DeviceProperties { get; set; }
+        public AzureDeviceProperties DeviceProperties { get; set; }
         public ICollection<AzureCommandInfo> Commands { get; set; }
     }
-
 }

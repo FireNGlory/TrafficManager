@@ -8,6 +8,7 @@ namespace TrafficManager.Domain.Models
 
         public AllInOneModelDto(AllInOneModel fullModel, string iotDeviceId)
         {
+            DeviceId = iotDeviceId;
             sn = fullModel.EventStream;
             ts = fullModel.Timestamp;
             id = fullModel.DeviceId;

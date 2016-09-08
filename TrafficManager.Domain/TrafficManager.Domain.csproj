@@ -116,6 +116,7 @@
     <Compile Include="Models\AzureCommandInfo.cs" />
     <Compile Include="Models\AzureCommandParams.cs" />
     <Compile Include="Models\AzureDeviceInfo.cs" />
+    <Compile Include="Models\AzureDeviceProperties.cs" />
     <Compile Include="Models\Commands\SystemCommandModel.cs" />
     <Compile Include="Models\DeviceSummaryModel.cs" />
     <Compile Include="Models\DirectoryUpdateModel.cs" />
