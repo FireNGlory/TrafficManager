@@ -24,6 +24,8 @@ namespace TrafficManager.Dashboard.Hubs
         public Transporter(IRepoDeviceMetadata deviceRepo)
         {
             _deviceRepo = deviceRepo;
+
+            //HACK: Get this in to config!
             const string connectionString = "HostName=FloPro.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=ESqz5/K6toejWVXAYb5dpffFg/Fwb4zHlY40o30O1mw=";//"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
             const string iotHubToClientEndpoint = "messages/events";
 
@@ -33,6 +35,8 @@ namespace TrafficManager.Dashboard.Hubs
 
             foreach (var partition in eventHubClient.GetRuntimeInformation().PartitionIds)
             {
+                //While debugging I found it helpful to backup the receiver a little to keep from having to constantly run the board
+                //This allowed me to fire up the board every 15 minutes or as needed while developing the web
                 var receiver = eventHubClient
                     .GetDefaultConsumerGroup()
                     .CreateReceiver(partition, DateTime.Now.AddMinutes(-15));
@@ -51,6 +55,9 @@ namespace TrafficManager.Dashboard.Hubs
             while (!_tokenSrc.IsCancellationRequested)
             {
                 _sbTasks.RemoveAll(x => x.IsCompleted);
+                //Every 30 seconds, let's check for a cancellation. As far as I could tell, there is not a listen method that
+                //has native cancellation support. There is for the normal Azure service bus, but guess it hasn't made it to 
+                //the IoT hub libraries.
                 var eventData = await receiver.ReceiveAsync(TimeSpan.FromSeconds(30));
                 if (eventData == null) continue;
 
@@ -59,6 +66,7 @@ namespace TrafficManager.Dashboard.Hubs
 
                 var theEvent = JsonConvert.DeserializeObject<AllInOneModelDto>(data).ToFullModel() as AllInOneModel;
 
+                //Send the event
                 if (theEvent == null)
                 {
                     ctx.Clients.All.eventReceived(data);
@@ -69,19 +77,23 @@ namespace TrafficManager.Dashboard.Hubs
 
                 ctx.Clients.All.eventReceived(theEvent.ToString(_deviceRepo));
 
+                //If this is a summary event, trigger that method
                 if (stream == EventStreamEnum.Summary)
                 {
                     ctx.Clients.All.summaryUpdate(theEvent.ToString(_deviceRepo));
                     continue;
                 }
 
+                //If it's a state change
                 if (stream != EventStreamEnum.StateChange) continue;
 
+                //Let's get some more friendly device information
                 var dev = _deviceRepo.GetByDeviceId(theEvent.DeviceId ?? theEvent.IntersectionId ?? Guid.Empty);
 
-
+                //and trigger the stateChange method for our clients
                 ctx.Clients.All.stateChange(dev.DeviceId, theEvent.CurrentState);
 
+                //Finally the bulbChange method when appropriate to update the graphical UI
                 if (dev?.DeviceType == "Bulb")
                     ctx.Clients.All.bulbChange(dev.DeviceId, theEvent.CurrentState == "On" || theEvent.CurrentState == "AssumedOn");
             }

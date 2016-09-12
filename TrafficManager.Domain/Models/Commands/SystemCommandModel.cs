@@ -10,7 +10,12 @@ namespace TrafficManager.Domain.Models.Commands
         public string Name { get; set; }
         public Guid MessageId { get; set; }
         public DateTime CreatedTime { get; set; }
-        public ICollection<KeyValuePair<string, object>>  Parameters { get; set; }
+        public SystemCommandParameters Parameters { get; set; }
     }
-    
+
+    public class SystemCommandParameters
+    {
+        public Guid TargetId { get; set; }
+        public int? NewPreference { get; set; }
+    }
 }
