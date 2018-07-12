@@ -26,7 +26,7 @@ namespace TrafficManager.Dashboard.Hubs
             _deviceRepo = deviceRepo;
 
             //HACK: Get this in to config!
-            const string connectionString = "HostName=FloPro.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=ESqz5/K6toejWVXAYb5dpffFg/Fwb4zHlY40o30O1mw=";//"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
+            const string connectionString = "HostName=TrafficManager.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=d8fItWBBB2VlF5OxZn8cqwdBaw2MJUqtE4Lqoz5JhL8=";//"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
             const string iotHubToClientEndpoint = "messages/events";
 
             _serviceClt = ServiceClient.CreateFromConnectionString(connectionString);

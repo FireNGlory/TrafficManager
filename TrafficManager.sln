@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrafficManager.Domain", "TrafficManager.Domain\TrafficManager.Domain.csproj", "{48FE2551-5592-4E2C-B6A8-99988EC6B3FC}"
 EndProject
@@ -43,8 +43,6 @@ Global
 		{48FE2551-5592-4E2C-B6A8-99988EC6B3FC}.Release|x86.Build.0 = Release|x86
 		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|ARM.ActiveCfg = Debug|ARM
-		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|ARM.Build.0 = Debug|ARM
-		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|ARM.Deploy.0 = Debug|ARM
 		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|x64.ActiveCfg = Debug|x64
 		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|x64.Build.0 = Debug|x64
 		{35E39084-250F-4B2B-AAA4-84A998CA192E}.Debug|x64.Deploy.0 = Debug|x64
@@ -125,5 +123,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8E6B4E49-D488-47B1-B8C4-BCB68F5FFF1E}
 	EndGlobalSection
 EndGlobal

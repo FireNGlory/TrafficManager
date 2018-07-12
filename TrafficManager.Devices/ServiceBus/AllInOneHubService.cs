@@ -240,11 +240,17 @@ namespace TrafficManager.Devices.ServiceBus
 
                 var msg = Encoding.UTF8.GetString(receivedMessage.GetBytes());
 
-                var cmd = JsonConvert.DeserializeObject<SystemCommandModel>(msg);
+	            try
+	            {
+		            var cmd = JsonConvert.DeserializeObject<SystemCommandModel>(msg);
 
-                if (cmd != null) OnCommandReceived(cmd);
-                
-                await _myClient.CompleteAsync(receivedMessage);
+		            if (cmd != null) OnCommandReceived(cmd);
+	            }
+	            catch
+	            {
+	            }
+
+	            await _myClient.CompleteAsync(receivedMessage);
             }
         }
 
@@ -256,7 +262,14 @@ namespace TrafficManager.Devices.ServiceBus
 
             if (theEnum == SystemCommandEnum.None) return;
 
-            var paramList = theCmd.Parameters ?? new List<KeyValuePair<string, object>>();
+	        var paramList = new List<KeyValuePair<string, object>>();
+
+	        if (theCmd.Parameters != null)
+	        {
+		        paramList.Add(new KeyValuePair<string, object>("targetId", theCmd.Parameters.TargetId));
+		        if (theCmd.Parameters.NewPreference.HasValue)
+			        paramList.Add(new KeyValuePair<string, object>("preference", theCmd.Parameters.NewPreference));
+	        }
 
             CommandReceived?.Invoke(this, new CommandReceivedEventArgs
             {
