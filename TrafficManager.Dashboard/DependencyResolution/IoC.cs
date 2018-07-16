@@ -24,7 +24,7 @@ namespace TrafficManager.Dashboard.DependencyResolution {
 	
     public static class IoC {
         public static IContainer Initialize() {
-            var ret = new Container(c => c.AddRegistry<DefaultRegistry>());
+            var ret = new Container();
 
             var activator = new SigRActivator(ret);
             GlobalHost.DependencyResolver.Register(typeof(IHubActivator), () => activator);

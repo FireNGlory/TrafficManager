@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,110 +9,131 @@ using Microsoft.Azure.Devices;
 using Microsoft.ServiceBus.Messaging;
 using Newtonsoft.Json;
 using TrafficManager.Dashboard.Domain;
+using TrafficManager.Dashboard.Implementations;
 using TrafficManager.Domain.Models;
 using TrafficManager.Domain.Models.Commands;
 using TrafficManager.Domain.Reference;
 
 namespace TrafficManager.Dashboard.Hubs
 {
-    public class Transporter : ITransporter
-    {
-        private readonly IRepoDeviceMetadata _deviceRepo;
-        private readonly CancellationTokenSource _tokenSrc = new CancellationTokenSource();
-        private readonly ServiceClient _serviceClt;
-        private readonly List<Task> _sbTasks = new List<Task>();
+	public sealed class Transporter
+	{
+		private static Transporter instance = null;
+		private static readonly object padlock = new object();
+		private readonly IRepoDeviceMetadata _deviceRepo;
+		private readonly CancellationTokenSource _tokenSrc = new CancellationTokenSource();
+		private readonly ServiceClient _serviceClt;
+		private readonly List<Task> _sbTasks = new List<Task>();
 
-        public Transporter(IRepoDeviceMetadata deviceRepo)
-        {
-            _deviceRepo = deviceRepo;
+		private Transporter(IRepoDeviceMetadata deviceRepo)
+		{
+			_deviceRepo = deviceRepo;
 
-            //HACK: Get this in to config!
-            const string connectionString = "HostName=TrafficManager.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=d8fItWBBB2VlF5OxZn8cqwdBaw2MJUqtE4Lqoz5JhL8=";//"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
-            const string iotHubToClientEndpoint = "messages/events";
+			//HACK: Get this in to config!
+			const string connectionString =
+				"HostName=TrafficManager.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=d8fItWBBB2VlF5OxZn8cqwdBaw2MJUqtE4Lqoz5JhL8="; //"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
+			const string iotHubToClientEndpoint = "messages/events";
 
-            _serviceClt = ServiceClient.CreateFromConnectionString(connectionString);
+			_serviceClt = ServiceClient.CreateFromConnectionString(connectionString);
 
-            var eventHubClient = EventHubClient.CreateFromConnectionString(connectionString, iotHubToClientEndpoint);
+			var eventHubClient = EventHubClient.CreateFromConnectionString(connectionString, iotHubToClientEndpoint);
 
-            foreach (var partition in eventHubClient.GetRuntimeInformation().PartitionIds)
-            {
-                //While debugging I found it helpful to backup the receiver a little to keep from having to constantly run the board
-                //This allowed me to fire up the board every 15 minutes or as needed while developing the web
-                var receiver = eventHubClient
-                    .GetDefaultConsumerGroup()
-                    .CreateReceiver(partition, DateTime.Now.AddMinutes(-15));
-                _sbTasks.Add(Listen(receiver));
-            }
-        }
+			foreach (var partition in eventHubClient.GetRuntimeInformation().PartitionIds)
+			{
+				//While debugging I found it helpful to backup the receiver a little to keep from having to constantly run the board
+				//This allowed me to fire up the board every 15 minutes or as needed while developing the web
+				var receiver = eventHubClient
+					.GetDefaultConsumerGroup()
+					.CreateReceiver(partition, DateTime.Now.AddMinutes(-15));
+				_sbTasks.Add(Listen(receiver));
+			}
+		}
 
-        public void SendCommand(string deviceId, SystemCommandModel cmd)
-        {
-            var msg = JsonConvert.SerializeObject(cmd);
-            _sbTasks.Add(_serviceClt.SendAsync(deviceId, new Message(Encoding.UTF8.GetBytes(msg))));
-        }
+		public static Transporter Instance
+		{
+			get
+			{
+				lock (padlock)
 
-        private async Task Listen(EventHubReceiver receiver)
-        {
-            while (!_tokenSrc.IsCancellationRequested)
-            {
-                _sbTasks.RemoveAll(x => x.IsCompleted);
-                //Every 30 seconds, let's check for a cancellation. As far as I could tell, there is not a listen method that
-                //has native cancellation support. There is for the normal Azure service bus, but guess it hasn't made it to 
-                //the IoT hub libraries.
-                var eventData = await receiver.ReceiveAsync(TimeSpan.FromSeconds(30));
-                if (eventData == null) continue;
+					if (instance == null)
+					{
+						instance = new Transporter(new StaticMetadataRepo());
+					}
 
-                var ctx = GlobalHost.ConnectionManager.GetHubContext<BusRHub>();
-                var data = Encoding.UTF8.GetString(eventData.GetBytes());
+				return instance;
+			}
+		}
+		
+		public void SendCommand(string deviceId, SystemCommandModel cmd)
+		{
+			var msg = JsonConvert.SerializeObject(cmd);
+			_sbTasks.Add(_serviceClt.SendAsync(deviceId, new Message(Encoding.UTF8.GetBytes(msg))));
+		}
 
-                var theEvent = JsonConvert.DeserializeObject<AllInOneModelDto>(data).ToFullModel() as AllInOneModel;
+		private async Task Listen(EventHubReceiver receiver)
+		{
+			while (!_tokenSrc.IsCancellationRequested)
+			{
+				_sbTasks.RemoveAll(x => x.IsCompleted);
+				//Every 30 seconds, let's check for a cancellation. As far as I could tell, there is not a listen method that
+				//has native cancellation support. There is for the normal Azure service bus, but guess it hasn't made it to 
+				//the IoT hub libraries.
+				var eventData = await receiver.ReceiveAsync(TimeSpan.FromSeconds(5));
+				if (eventData == null) continue;
 
-                //Send the event
-                if (theEvent == null)
-                {
-                    ctx.Clients.All.eventReceived(data);
-                    continue;
-                }
+				var ctx = GlobalHost.ConnectionManager.GetHubContext<BusRHub>();
+				var data = Encoding.UTF8.GetString(eventData.GetBytes());
 
-                var stream = (EventStreamEnum)theEvent.EventStream;
+				var theEvent = JsonConvert.DeserializeObject<AllInOneModelDto>(data).ToFullModel() as AllInOneModel;
 
-                ctx.Clients.All.eventReceived(theEvent.ToString(_deviceRepo));
+				//Send the event
+				if (theEvent == null)
+				{
+					ctx.Clients.All.eventReceived(data);
+					continue;
+				}
 
-                //If this is a summary event, trigger that method
-                if (stream == EventStreamEnum.Summary)
-                {
-                    ctx.Clients.All.summaryUpdate(theEvent.ToString(_deviceRepo));
-                    continue;
-                }
+				var stream = (EventStreamEnum)theEvent.EventStream;
 
-                //If it's a state change
-                if (stream != EventStreamEnum.StateChange) continue;
+				ctx.Clients.All.eventReceived(theEvent.ToString(_deviceRepo));
 
-                //Let's get some more friendly device information
-                var dev = _deviceRepo.GetByDeviceId(theEvent.DeviceId ?? theEvent.IntersectionId ?? Guid.Empty);
+				//If this is a summary event, trigger that method
+				if (stream == EventStreamEnum.Summary)
+				{
+					ctx.Clients.All.summaryUpdate(theEvent.ToString(_deviceRepo));
+					continue;
+				}
 
-                //and trigger the stateChange method for our clients
-                ctx.Clients.All.stateChange(dev.DeviceId, theEvent.CurrentState);
+				//If it's a state change
+				if (stream != EventStreamEnum.StateChange) continue;
 
-                //Finally the bulbChange method when appropriate to update the graphical UI
-                if (dev?.DeviceType == "Bulb")
-                    ctx.Clients.All.bulbChange(dev.DeviceId, theEvent.CurrentState == "On" || theEvent.CurrentState == "AssumedOn");
-            }
-        }
+				//Let's get some more friendly device information
+				var dev = _deviceRepo.GetByDeviceId(theEvent.DeviceId ?? theEvent.IntersectionId ?? Guid.Empty);
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+				//and trigger the stateChange method for our clients
+				ctx.Clients.All.stateChange(dev.DeviceId, theEvent.CurrentState);
 
-        protected void Dispose(bool disposing)
-        {
-            if (!disposing) return;
+				//Finally the bulbChange method when appropriate to update the graphical UI
+				if (dev?.DeviceType == "Bulb")
+					ctx.Clients.All.bulbChange(dev.DeviceId, theEvent.CurrentState == "On" || theEvent.CurrentState == "AssumedOn");
+			}
 
-            _tokenSrc.Cancel(false);
-            
-            Task.WaitAll(_sbTasks.ToArray());
+			var test = true;
+		}
 
-        }
-    }
+		public void Dispose()
+		{
+			Dispose(true);
+		}
+
+		protected void Dispose(bool disposing)
+		{
+			if (!disposing) return;
+
+			_tokenSrc.Cancel(false);
+
+			Task.WaitAll(_sbTasks.ToArray());
+
+		}
+	}
 }

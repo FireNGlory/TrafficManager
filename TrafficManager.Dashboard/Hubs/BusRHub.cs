@@ -8,11 +8,11 @@ namespace TrafficManager.Dashboard.Hubs
 {
     public class BusRHub : Hub
     {
-        private readonly ITransporter _transporter;
+        private readonly Transporter _transporter;
 
-        public BusRHub(ITransporter transporter)
+        public BusRHub()
         {
-            _transporter = transporter;
+	        _transporter = Transporter.Instance;
         }
 
         public void SendCommand(string userName, int commandEnumVal, Guid? targetId, string arg)
