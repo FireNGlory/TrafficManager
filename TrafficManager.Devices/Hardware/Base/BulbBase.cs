@@ -15,6 +15,7 @@ namespace TrafficManager.Devices.Hardware.Base
 
         protected bool ImBroken;
         protected BulbStateEnum LastStateRequest;
+	    protected BulbStateEnum CurrentState;
         private readonly Stopwatch _usageTimer;
 
         public BulbBase(Guid id, BulbTypeEnum bulbType, ICurrentSensor currentSensor)
@@ -29,9 +30,10 @@ namespace TrafficManager.Devices.Hardware.Base
         public BulbTypeEnum BulbType { get; }
         public ICurrentSensor MyCurrentSensor { get; }
 
-        public async Task<BulbStateEnum> GetState()
+        public Task<BulbStateEnum> GetState()
         {
-            if (ImBroken) return BulbStateEnum.InOperable;
+	        return Task.FromResult(CurrentState);
+/*            if (ImBroken) return BulbStateEnum.InOperable;
 
             var sensorState = await MyCurrentSensor.GetState();
 
@@ -45,7 +47,7 @@ namespace TrafficManager.Devices.Hardware.Base
                     return BulbStateEnum.On;
                 default:
                     throw new ArgumentOutOfRangeException();
-            }
+            }*/
         }
 
         public virtual Task<bool> TransitionToState(BulbStateEnum newState)

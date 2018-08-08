@@ -33,16 +33,19 @@ namespace TrafficManager.Devices.Hardware
             var oldState = await GetState();
             LastStateRequest = newState;
 
-            _gpioPin.Write((newState == BulbStateEnum.On) ? GpioPinValue.Low : GpioPinValue.High);
+            _gpioPin.Write(newState == BulbStateEnum.On ? GpioPinValue.Low : GpioPinValue.High);
+/*
             
             //HACK: Having trouble getting reliable readings from my ACS712 without a steady power supply using 50w bulbs
             var areWeMocking = MyCurrentSensor as MockSensor;
             areWeMocking?.SetValue(newState == BulbStateEnum.On ? 1 : 0);
 
             var actualState = await GetState();
+*/
 
+	        CurrentState = newState;
             if (oldState != newState)
-                OnStateChanged(oldState, actualState);
+                OnStateChanged(oldState, newState);
 
             return true;
         }

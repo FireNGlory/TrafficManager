@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -66,7 +67,9 @@ namespace TrafficManager.FlowProApp
             _eventor.SendOnline();
 
             InitGpio(cfg).Wait(_tSource.Token);
-            
+
+	       // var t = Reporter();
+
             BindEvents();
 
             _eventor.CommandReceived += EventorOnCommandReceived;
@@ -86,6 +89,17 @@ namespace TrafficManager.FlowProApp
             deferral.Complete();
         }
 
+	    private Task Reporter()
+	    {
+		    return Task.Run(() =>
+		    {
+			    while (true)
+			    {
+					Debug.Write($"{_mcp3208.GetSpread(0)}-{_mcp3208.GetSpread(1)}-{_mcp3208.GetSpread(2)}-{_mcp3208.GetSpread(3)}-{_mcp3208.GetSpread(4)} \n");
+					Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
+			    }
+		    });
+	    }
         private void EventorOnCommandReceived(object sender, CommandReceivedEventArgs args)
         {
             Guid? targetId = null;
@@ -196,7 +210,8 @@ namespace TrafficManager.FlowProApp
         {
             try
             {
-                _mcp3208 = new Mcp3208SpiDevice(0);
+	            _mcp3208 = new Mcp3208SpiDevice(0);
+
                 var gpio = GpioController.GetDefault();
 
                 // Show an error if there is no GPIO controller
@@ -255,37 +270,37 @@ namespace TrafficManager.FlowProApp
             await Task.Run(() =>
             {
                 //My *north* lamp is the real bulb breakout... use different sensors by changing the commented line
-                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthRedBulbId, BulbTypeEnum.Red, new MockSensor(cfg.NorthRedBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.NorthRedBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthRedBulbId, BulbTypeEnum.Red, //new MockSensor(cfg.NorthRedBulbSensorId),
+                    new Acs712CurrentSensor5A(cfg.NorthRedBulbSensorId, _mcp3208, 0), 
                     gpio.OpenPin(cfg.NorthRedBulbPinId)));
-                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthYellowBulbId, BulbTypeEnum.Yellow, new MockSensor(cfg.NorthYellowBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.NorthYellowBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthYellowBulbId, BulbTypeEnum.Yellow, //new MockSensor(cfg.NorthYellowBulbSensorId),
+                    new Acs712CurrentSensor5A(cfg.NorthYellowBulbSensorId, _mcp3208, 0), 
                     gpio.OpenPin(cfg.NorthYellowBulbPinId)));
-                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthGreenBulbId, BulbTypeEnum.Green, new MockSensor(cfg.NorthGreenBulbSensorId),
-                    //new Acs712CurrentSensor5A(cfg.NorthGreenBulbSensorId, _mcp3208, McpChannelByteEnum.ChannelOne), 
+                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthGreenBulbId, BulbTypeEnum.Green, //new MockSensor(cfg.NorthGreenBulbSensorId),
+                    new Acs712CurrentSensor5A(cfg.NorthGreenBulbSensorId, _mcp3208, 0), 
                     gpio.OpenPin(cfg.NorthGreenBulbPinId)));
 
 
                 //The rest of the lamps are simulated on the breadboard with LEDs
-                _sBulbs.Add(new LedWithoutSensor(cfg.SouthRedBulbId, BulbTypeEnum.Red, cfg.SouthRedBulbSensorId,
+                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthRedBulbId, BulbTypeEnum.Red, new Acs712CurrentSensor30A(cfg.SouthRedBulbSensorId, _mcp3208, 2),
                     gpio.OpenPin(cfg.SouthRedBulbPinId)));
-                _sBulbs.Add(new LedWithoutSensor(cfg.SouthYellowBulbId, BulbTypeEnum.Yellow, cfg.SouthYellowBulbSensorId,
+                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthYellowBulbId, BulbTypeEnum.Yellow, new Acs712CurrentSensor30A(cfg.SouthYellowBulbSensorId, _mcp3208, 2),
                     gpio.OpenPin(cfg.SouthYellowBulbPinId)));
-                _sBulbs.Add(new LedWithoutSensor(cfg.SouthGreenBulbId, BulbTypeEnum.Green, cfg.SouthGreenBulbSensorId,
+                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthGreenBulbId, BulbTypeEnum.Green, new Acs712CurrentSensor30A(cfg.SouthGreenBulbSensorId, _mcp3208, 2),
                     gpio.OpenPin(cfg.SouthGreenBulbPinId)));
 
-                _eBulbs.Add(new LedWithoutSensor(cfg.EastRedBulbId, BulbTypeEnum.Red, cfg.EastRedBulbSensorId,
+                _eBulbs.Add(new RealBulbWithSensor(cfg.EastRedBulbId, BulbTypeEnum.Red,  new Acs712CurrentSensor30A(cfg.EastRedBulbSensorId, _mcp3208, 3),
                     gpio.OpenPin(cfg.EastRedBulbPinId)));
-                _eBulbs.Add(new LedWithoutSensor(cfg.EastYellowBulbId, BulbTypeEnum.Yellow, cfg.EastYellowBulbSensorId,
+                _eBulbs.Add(new RealBulbWithSensor(cfg.EastYellowBulbId, BulbTypeEnum.Yellow,  new Acs712CurrentSensor30A(cfg.EastYellowBulbSensorId, _mcp3208, 3),
                     gpio.OpenPin(cfg.EastYellowBulbPinId)));
-                _eBulbs.Add(new LedWithoutSensor(cfg.EastGreenBulbId, BulbTypeEnum.Green, cfg.EastGreenBulbSensorId,
+                _eBulbs.Add(new RealBulbWithSensor(cfg.EastGreenBulbId, BulbTypeEnum.Green,  new Acs712CurrentSensor30A(cfg.EastGreenBulbSensorId, _mcp3208, 3),
                     gpio.OpenPin(cfg.EastGreenBulbPinId)));
 
-                _wBulbs.Add(new LedWithoutSensor(cfg.WestRedBulbId, BulbTypeEnum.Red, cfg.WestRedBulbSensorId,
+                _wBulbs.Add(new RealBulbWithSensor(cfg.WestRedBulbId, BulbTypeEnum.Red,  new Acs712CurrentSensor5A(cfg.WestRedBulbSensorId, _mcp3208, 1),
                     gpio.OpenPin(cfg.WestRedBulbPinId)));
-                _wBulbs.Add(new LedWithoutSensor(cfg.WestYellowBulbId, BulbTypeEnum.Yellow, cfg.WestYellowBulbSensorId,
+                _wBulbs.Add(new RealBulbWithSensor(cfg.WestYellowBulbId, BulbTypeEnum.Yellow,  new Acs712CurrentSensor5A(cfg.WestYellowBulbSensorId, _mcp3208, 1),
                     gpio.OpenPin(cfg.WestYellowBulbPinId)));
-                _wBulbs.Add(new LedWithoutSensor(cfg.WestGreenBulbId, BulbTypeEnum.Green, cfg.WestGreenBulbSensorId,
+                _wBulbs.Add(new RealBulbWithSensor(cfg.WestGreenBulbId, BulbTypeEnum.Green,  new Acs712CurrentSensor5A(cfg.WestGreenBulbSensorId, _mcp3208, 1),
                     gpio.OpenPin(cfg.WestGreenBulbPinId)));
 
                 var t = new[]

@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
+using Windows.Devices.Adc;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Spi;
+using Microsoft.IoT.Devices.Adc;
 using TrafficManager.Domain.Reference;
 
 namespace TrafficManager.Devices.Hardware
@@ -10,50 +14,75 @@ namespace TrafficManager.Devices.Hardware
         private readonly decimal _vre;
         private readonly McpChannelByteEnum _commonChannel;
         private readonly McpChannelByteEnum _vreChannel;
-        private readonly SpiDevice _myDevice;
+
+	    private AdcController _controller;
+	    //private readonly SpiDevice _myDevice;
 
         public Mcp3208SpiDevice(int spiChannel, decimal vre = 4.83m, McpChannelByteEnum commonChannel = McpChannelByteEnum.ChannelSeven, McpChannelByteEnum vreChannel = McpChannelByteEnum.ChannelEight)
         {
-            _vre = vre;
+/*            _vre = vre;
             _commonChannel = commonChannel;
             _vreChannel = vreChannel;
             var spiSettings = new SpiConnectionSettings(0)
             {
-                ClockFrequency = 2000000,
-                Mode = SpiMode.Mode3
-            };
-            
-            var spiQuery = SpiDevice.GetDeviceSelector($"SPI{spiChannel}");
-            var deviceInfo = DeviceInformation.FindAllAsync(spiQuery).AsTask().Result;
+                ClockFrequency = 500000,
+                Mode = SpiMode.Mode0
+            };*/
 
+	        //var mcp = new MCP3208();
+            //var spiQuery = SpiDevice.GetDeviceSelector($"SPI{spiChannel}");
+           // var deviceInfo = DeviceInformation.FindAllAsync(spiQuery).AsTask().Result;
+	        _controller = AdcController.GetControllersAsync(new MCP3208()).AsTask().Result.First();
+			/*
             if (deviceInfo != null && deviceInfo.Count > 0)
             {
-                _myDevice = SpiDevice.FromIdAsync(deviceInfo[0].Id, spiSettings).AsTask().Result;
-            }
+	            _myDevice = SpiDevice.FromIdAsync(deviceInfo[0].Id, spiSettings).AsTask().Result;
+            }*/
         }
 
-        public decimal GetVoltage(McpChannelByteEnum channel)
-        {
-            //To get the voltage I'm going to get the percentage and calulate based on expected vre
-            var pct = GetPercentage(channel, 10);
+	    public int GetSpread(int channel)
+	    {
+		    var comm = _controller.OpenChannel(channel);
+			
+		    int maxT = 0;
+		    int minT = 10000;
+		    int runningTotal = 0;
+			for (var j = 0; j < 5; j++)
+		    {
+				for (var i = 0; i < 500; i++)
+				{
+					var t = comm.ReadValue();
+					if (t > maxT) maxT = t;
+					if (t < minT) minT = t;
+				}
 
-            //This is not as accurate as the percentage becasue I'm using the Pi to power Vre and it's 
-            //not well regulated
-            return _vre * (pct/100);
-        }
+			    runningTotal += maxT - minT;
+		    }
 
+		    return runningTotal / 5;
+	    }
+	    
+	    /*
         public decimal GetPercentage(McpChannelByteEnum channel, int decimals = 4)
         {
             //Since I don't hae a well regulated power supply I'm going to take a reading from
             //my Vre channel and use that as the upper bound and try removing the ground rail noise
+			
+	        decimal reading = 0;
+	        decimal avgT = 0;
+	        
+	        for (var i = 0; i < 500; i++)
+	        {
+				
+		        decimal noise = Read((byte)_commonChannel);
+		        decimal vreTicks = Read((byte)_vreChannel) - noise;
+		        var channelTicks = Read((byte)channel) - noise;
 
-            decimal noise = Read((byte)_commonChannel);
-            decimal vreTicks = Read((byte)_vreChannel) - noise;
-            var channelTicks = Read((byte)channel) - noise;
-
-            var ret = (channelTicks / vreTicks) * 100;
-
-            return Math.Round(ret, decimals);
+		        reading += (channelTicks / vreTicks) * 100;
+		        avgT += channelTicks;
+	        }
+			Debug.Write("t" + avgT / 500 + "t");
+            return Math.Round(reading/500m, decimals);
         }
 
         private int Read(byte fromChannel)
@@ -69,6 +98,6 @@ namespace TrafficManager.Devices.Hardware
             //then shift result 8 bits to make room for the data from the 3rd byte (makes 12 bits total)
             //third byte, need all bits, simply add it to the above result 
             return ((receiveBuffer[1] & 15) << 8) + receiveBuffer[2];
-        }
+        }*/
     }
 }

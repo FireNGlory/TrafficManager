@@ -32,5 +32,9 @@ namespace TrafficManager.Devices.Mocks
             if (oldState != newState)
                 OnStateChanged(oldState, newState);
         }
+
+	    public override void TakeReading(bool ignoreExceptions)
+	    {
+	    }
     }
 }

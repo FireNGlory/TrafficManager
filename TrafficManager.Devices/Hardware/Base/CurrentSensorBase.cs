@@ -7,7 +7,7 @@ using TrafficManager.Domain.ValueTypes;
 
 namespace TrafficManager.Devices.Hardware.Base
 {
-    public class CurrentSensorBase : ICurrentSensor
+    public abstract class CurrentSensorBase : ICurrentSensor
     {
         public event StateChangedEvent StateChanged;
 
@@ -17,10 +17,12 @@ namespace TrafficManager.Devices.Hardware.Base
         protected TimeSpan InOpTolerance;
         protected bool ImBroken;
 
-        public CurrentSensorBase(Guid id)
+        protected CurrentSensorBase(Guid id)
         {
             Id = id;
         }
+
+	    public abstract void TakeReading(bool ignoreExceptions);
 
         public Guid Id { get; }
 
@@ -28,6 +30,8 @@ namespace TrafficManager.Devices.Hardware.Base
         {
             return Task.Run(() =>
             {
+				TakeReading(true);
+
                 if (ImBroken || LastUpdate + InOpTolerance <= DateTime.UtcNow)
                     return CurrentSensorStateEnum.InOperable;
 
@@ -41,7 +45,7 @@ namespace TrafficManager.Devices.Hardware.Base
         {
             ImBroken = broken;
         }
-
+		
         protected virtual void OnStateChanged(CurrentSensorStateEnum oldState, CurrentSensorStateEnum newState)
         {
             StateChanged?.Invoke(this, new StateChangedEventArgs
