@@ -18,277 +18,273 @@ using TrafficManager.Domain.ValueTypes;
 
 namespace TrafficManager.Devices.ServiceBus
 {
-    public class AllInOneHubService : IEventService
-    {
-        public event CommandReceivedEvent CommandReceived;
+	public class AllInOneHubService : IEventService
+	{
+		public event CommandReceivedEvent CommandReceived;
 
-        private static AllInOneHubService _instance;
+		private static AllInOneHubService _instance;
 
-        private readonly Task _listener;
-        private readonly DeviceClient _myClient;
-        private readonly string _iotDeviceId;
-        private readonly List<IAsyncAction> _sendTasks = new List<IAsyncAction>();
-        private readonly CancellationTokenSource _tSource = new CancellationTokenSource();
-        private readonly ICollection<Message> _messageBuffer = new List<Message>();
-        
-        private Task _batchTimer;
-        private bool _timerRunning;
-        private static readonly object[] Locker = {};
+		private readonly Task _listener;
+		private readonly DeviceClient _myClient;
+		private readonly string _iotDeviceId;
+		private readonly List<IAsyncAction> _sendTasks = new List<IAsyncAction>();
+		private readonly CancellationTokenSource _tSource = new CancellationTokenSource();
+		private readonly ICollection<Message> _messageBuffer = new List<Message>();
 
-        //This should be injected
-        private readonly IConfigService _cfgSvc = new InMemoryConfigService();
+		private Task _batchTimer;
+		private bool _timerRunning;
+		private static readonly object[] Locker = { };
 
-        private AllInOneHubService()
-        {
-            var cfg = _cfgSvc.ReadConfig().Result;
+		//This should be injected
+		private readonly IConfigService _cfgSvc = new InMemoryConfigService();
 
-            var auth = AuthenticationMethodFactory.CreateAuthenticationWithRegistrySymmetricKey(cfg.AzureIoTDeviceId,
-                cfg.AzureIoTDeviceKey);
+		private AllInOneHubService()
+		{
+			var cfg = _cfgSvc.ReadConfig().Result;
 
-            _iotDeviceId = cfg.AzureIoTDeviceId;
+			var auth = AuthenticationMethodFactory.CreateAuthenticationWithRegistrySymmetricKey(cfg.AzureIoTDeviceId,
+				cfg.AzureIoTDeviceKey);
 
-            _myClient = DeviceClient.Create(cfg.AzureIoTHubUri, auth, TransportType.Http1);
+			_iotDeviceId = cfg.AzureIoTDeviceId;
 
-            _listener = Listener(_tSource);
-            _batchTimer = Task.Run(() =>
-            {
-                while (true)
-                {
-                    Task.Delay(TimeSpan.FromSeconds(10)).Wait();
-                    _sendTasks.RemoveAll(t => t?.AsTask() == null || t.AsTask().IsCompleted);
-                }
-            });
-        }
+			_myClient = DeviceClient.Create(cfg.AzureIoTHubUri, auth, TransportType.Http1);
 
-        public static AllInOneHubService Instance()
-        {
-            return _instance ?? (_instance = new AllInOneHubService());
-        }
+			_listener = Listener(_tSource);
+			_batchTimer = Task.Run(() =>
+			{
+				while (true)
+				{
+					Task.Delay(TimeSpan.FromSeconds(10)).Wait();
+					_sendTasks.RemoveAll(t => t?.AsTask() == null || t.AsTask().IsCompleted);
+				}
+			});
+		}
 
-        public void SendOnline()
-        {
-            var serialMsg = JsonConvert.SerializeObject(new AzureDeviceInfo(_iotDeviceId));
-            var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
-            
-            _myClient.SendEventAsync(message).AsTask().Wait();
-        }
+		public static AllInOneHubService Instance()
+		{
+			return _instance ?? (_instance = new AllInOneHubService());
+		}
 
-        public void UpdateDirectory(Guid deviceId, string deviceType, string deviceName, Guid? parentId)
-        {
-            SendMessage(EventStreamEnum.Directory, new AllInOneModel
-            {
-                Timestamp = DateTime.UtcNow,
-                DeviceId = deviceId,
-                DeviceType = deviceType,
-                DeviceName = deviceName,
-                ParentDeviceId = parentId
-            });
-        }
-        
-        public void SendStateChangeEvent(Guid deviceId, string deviceType, string oldState, string newState, DateTime timestamp)
-        {
-            SendMessage(EventStreamEnum.StateChange, new AllInOneModel
-            {
-                Timestamp = timestamp,
-                DeviceId = deviceId,
-                OldState = oldState,
-                CurrentState = newState,
-                DeviceType = deviceType
-            });
-        }
+		public void SendOnline()
+		{
+			var serialMsg = JsonConvert.SerializeObject(new AzureDeviceInfo(_iotDeviceId));
+			var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
 
-        public void SendAnomaly(Guid intersectionId, string function, string desc, Guid? offender, DateTime timestamp)
-        {
-            SendMessage(EventStreamEnum.Anomaly, new AllInOneModel
-            {
-                Timestamp = timestamp,
-                IntersectionId = intersectionId,
-                DeviceId = offender,
-                Description = desc,
-                Function = function
-            });
-        }
+			_myClient.SendEventAsync(message).AsTask().Wait();
+		}
 
-        public void SendSummaryUpdates(ICollection<DeviceSummary> summaries)
-        {
-            var flatList = summaries.ToList();
-            var childList = summaries.SelectMany(s => s.ChildSummaries).ToList();
+		public void UpdateDirectory(Guid deviceId, string deviceType, string deviceName, Guid? parentId)
+		{
+			SendMessage(EventStreamEnum.Directory, new AllInOneModel
+			{
+				Timestamp = DateTime.UtcNow,
+				DeviceId = deviceId,
+				DeviceType = deviceType,
+				DeviceName = deviceName,
+				ParentDeviceId = parentId
+			});
+		}
 
-            while (childList.Any())
-            {
-                flatList.AddRange(childList);
-                childList = childList.SelectMany(s => s.ChildSummaries).ToList();
-            }
+		public void SendStateChangeEvent(Guid deviceId, string deviceType, string oldState, string newState, DateTime timestamp)
+		{
+			SendMessage(EventStreamEnum.StateChange, new AllInOneModel
+			{
+				Timestamp = timestamp,
+				DeviceId = deviceId,
+				OldState = oldState,
+				CurrentState = newState,
+				DeviceType = deviceType
+			});
+		}
 
-            ICollection<AllInOneModel> msgList = flatList.Select(s => new AllInOneModel
-            {
-                DeviceId = s.DeviceId,
-                CurrentState = s.CurrentState.ToString(), //TODO: We need a service to get lables from enum ints.
-                Timestamp = s.Timestamp,
-                IsError = s.HasMalfunction
-            }).ToList();
+		public void SendAnomaly(Guid intersectionId, string function, string desc, Guid? offender, DateTime timestamp)
+		{
+			SendMessage(EventStreamEnum.Anomaly, new AllInOneModel
+			{
+				Timestamp = timestamp,
+				IntersectionId = intersectionId,
+				DeviceId = offender,
+				Description = desc,
+				Function = function
+			});
+		}
 
-            SendMessageBatch(EventStreamEnum.Summary, msgList);
-        }
+		public void SendSummaryUpdates(ICollection<DeviceSummary> summaries)
+		{
+			var flatList = summaries.ToList();
+			var childList = summaries.SelectMany(s => s.ChildSummaries).ToList();
 
-        public void SendUsageUpdate(Guid deviceId, decimal factorOne, decimal factorTwo)
-        {
-            SendMessage(EventStreamEnum.Usage, new AllInOneModel
-            {
-                DeviceId = deviceId,
-                Timestamp = DateTime.UtcNow,
-                UsageFactorOne = factorOne,
-                UsageFactorTwo = factorTwo
-            });
-        }
+			while (childList.Any())
+			{
+				flatList.AddRange(childList);
+				childList = childList.SelectMany(s => s.ChildSummaries).ToList();
+			}
 
-        public void SendRightOfWayChanged(Guid intersectionId, Guid oldRoWRouteId, Guid newRoWRouteId, DateTime timeStamp)
-        {
-            SendMessage(EventStreamEnum.RoWChange, new AllInOneModel
-            {
-                Timestamp = timeStamp,
-                IntersectionId = intersectionId,
-                OldState = oldRoWRouteId.ToString(),
-                CurrentState = newRoWRouteId.ToString()
-            });
-        }
+			ICollection<AllInOneModel> msgList = flatList.Select(s => new AllInOneModel
+			{
+				DeviceId = s.DeviceId,
+				CurrentState = s.CurrentState.ToString(), //TODO: We need a service to get lables from enum ints.
+				Timestamp = s.Timestamp,
+				IsError = s.HasMalfunction
+			}).ToList();
 
-        public void SendLogMessage(Guid intersectionId, bool containsError, string desc, DateTime timeStamp)
-        {
-            SendMessage(EventStreamEnum.Log, new AllInOneModel
-            {
-                Timestamp = timeStamp,
-                IntersectionId = intersectionId,
-                IsError = containsError,
-                Message = desc
-            });
-        }
+			SendMessageBatch(EventStreamEnum.Summary, msgList);
+		}
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+		public void SendUsageUpdate(Guid deviceId, decimal factorOne, decimal factorTwo)
+		{
+			SendMessage(EventStreamEnum.Usage, new AllInOneModel
+			{
+				DeviceId = deviceId,
+				Timestamp = DateTime.UtcNow,
+				UsageFactorOne = factorOne,
+				UsageFactorTwo = factorTwo
+			});
+		}
 
-        private void SendMessage(EventStreamEnum streamId, AllInOneModel msg)
-        {
-            msg.EventStream = (int)streamId;
+		public void SendRightOfWayChanged(Guid intersectionId, Guid oldRoWRouteId, Guid newRoWRouteId, DateTime timeStamp)
+		{
+			SendMessage(EventStreamEnum.RoWChange, new AllInOneModel
+			{
+				Timestamp = timeStamp,
+				IntersectionId = intersectionId,
+				OldState = oldRoWRouteId.ToString(),
+				CurrentState = newRoWRouteId.ToString()
+			});
+		}
 
-            var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg, _iotDeviceId));
-            var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
+		public void SendLogMessage(Guid intersectionId, bool containsError, string desc, DateTime timeStamp)
+		{
+			SendMessage(EventStreamEnum.Log, new AllInOneModel
+			{
+				Timestamp = timeStamp,
+				IntersectionId = intersectionId,
+				IsError = containsError,
+				Message = desc
+			});
+		}
 
-            //_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
+		public void Dispose()
+		{
+			Dispose(true);
+		}
 
-            _sendTasks.Add(_myClient.SendEventAsync(message));
+		private void SendMessage(EventStreamEnum streamId, AllInOneModel msg)
+		{
+			msg.EventStream = (int)streamId;
 
-            /*            lock(Locker)
+			var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg, _iotDeviceId));
+			var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
+
+			//_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
+
+			_sendTasks.Add(_myClient.SendEventAsync(message));
+
+			/*            lock(Locker)
                             _messageBuffer.Add(message);
 
                         StartTimer();
                         _sendTasks.RemoveAll(t => t.AsTask().IsCompleted);*/
-        }
+		}
 
-        private void SendMessageBatch(EventStreamEnum streamId, IEnumerable<AllInOneModel> msgs)
-        {
-            var messages = new List<Message>();
-            foreach (var msg in msgs)
-            {
-                msg.EventStream = (int)streamId;
+		private void SendMessageBatch(EventStreamEnum streamId, IEnumerable<AllInOneModel> msgs)
+		{
+			var messages = new List<Message>();
+			foreach (var msg in msgs)
+			{
+				msg.EventStream = (int)streamId;
 
-                var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg, _iotDeviceId));
-                var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
+				var serialMsg = JsonConvert.SerializeObject(new AllInOneModelDto(msg, _iotDeviceId));
+				var message = new Message(Encoding.UTF8.GetBytes(serialMsg));
 
-                messages.Add(message);
-            }
+				messages.Add(message);
+			}
 
-            _sendTasks.Add(_myClient.SendEventBatchAsync(messages));
+			_sendTasks.Add(_myClient.SendEventBatchAsync(messages));
 
-            //_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
-        }
+			//_sendTasks.RemoveAll(t => t.AsTask().IsCompleted);
+		}
 
-        private void StartTimer()
-        {
-            //TODO: Need better error checking here!
-            if (!_timerRunning)
-                _batchTimer = Task.Run(() =>
-                {
-                    _timerRunning = true;
-                    Task.Delay(5000).Wait();
-                    List<Message> thisBatch;
+		private void StartTimer()
+		{
+			//TODO: Need better error checking here!
+			if (!_timerRunning)
+				_batchTimer = Task.Run(() =>
+				{
+					_timerRunning = true;
+					Task.Delay(5000).Wait();
+					List<Message> thisBatch;
 
-                    lock (Locker)
-                    {
-                        thisBatch = _messageBuffer.ToList();
-                        _messageBuffer.Clear();
-                    }
+					lock (Locker)
+					{
+						thisBatch = _messageBuffer.ToList();
+						_messageBuffer.Clear();
+					}
 
-                    _sendTasks.Add(_myClient.SendEventBatchAsync(thisBatch));
+					_sendTasks.Add(_myClient.SendEventBatchAsync(thisBatch));
 
-                    _timerRunning = false;
+					_timerRunning = false;
 
-                    // ReSharper disable once InconsistentlySynchronizedField
-                    if (_messageBuffer.Any())
-                        StartTimer();
-                });
-        }
-        
-        private async Task Listener(CancellationTokenSource token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                var receivedMessage = await _myClient.ReceiveAsync();
-                if (receivedMessage == null) continue;
+					// ReSharper disable once InconsistentlySynchronizedField
+					if (_messageBuffer.Any())
+						StartTimer();
+				});
+		}
 
-                var msg = Encoding.UTF8.GetString(receivedMessage.GetBytes());
+		private async Task Listener(CancellationTokenSource token)
+		{
+			while (!token.IsCancellationRequested)
+			{
+				var receivedMessage = await _myClient.ReceiveAsync();
+				if (receivedMessage == null) continue;
 
-	            try
-	            {
-		            var cmd = JsonConvert.DeserializeObject<SystemCommandModel>(msg);
+				var msg = Encoding.UTF8.GetString(receivedMessage.GetBytes());
 
-		            if (cmd != null) OnCommandReceived(cmd);
-	            }
-	            catch
-	            {
-	            }
+				try
+				{
+					var cmd = JsonConvert.DeserializeObject<SystemCommandModel>(msg);
 
-	            await _myClient.CompleteAsync(receivedMessage);
-            }
-        }
+					if (cmd != null) OnCommandReceived(cmd);
+				}
+				catch
+				{
+				}
 
-        protected virtual void OnCommandReceived(SystemCommandModel theCmd)
-        {
+				await _myClient.CompleteAsync(receivedMessage);
+			}
+		}
 
-            SystemCommandEnum theEnum;
-            Enum.TryParse(theCmd.Name, true, out theEnum);
+		protected virtual void OnCommandReceived(SystemCommandModel theCmd)
+		{
+			Enum.TryParse(theCmd.Name, true, out SystemCommandEnum theEnum);
 
-            if (theEnum == SystemCommandEnum.None) return;
+			if (theEnum == SystemCommandEnum.None) return;
 
-	        var paramList = new List<KeyValuePair<string, object>>();
+			var paramList = new List<KeyValuePair<string, object>>();
 
-	        if (theCmd.Parameters != null)
-	        {
-		        paramList.Add(new KeyValuePair<string, object>("targetId", theCmd.Parameters.TargetId));
-		        if (theCmd.Parameters.NewPreference.HasValue)
-			        paramList.Add(new KeyValuePair<string, object>("preference", theCmd.Parameters.NewPreference));
-	        }
+			paramList.Add(new KeyValuePair<string, object>("targetId", theCmd.TargetId));
 
-            CommandReceived?.Invoke(this, new CommandReceivedEventArgs
-            {
-                Command = theEnum,
-                Parameters = paramList
-            });
-        }
+			if (theCmd.NewPreference.HasValue)
+				paramList.Add(new KeyValuePair<string, object>("preference", theCmd.NewPreference));
 
-        private void Dispose(bool disposing)
-        {
-            if (!disposing) return;
+			CommandReceived?.Invoke(this, new CommandReceivedEventArgs
+			{
+				Command = theEnum,
+				Parameters = paramList
+			});
+		}
 
-            _tSource.Cancel();
-            _listener.Wait();
-            _batchTimer.Wait();
+		private void Dispose(bool disposing)
+		{
+			if (!disposing) return;
 
-            Task.WaitAll(_sendTasks.Select(t => t.AsTask()).ToArray());
+			_tSource.Cancel();
+			_listener.Wait();
+			_batchTimer.Wait();
 
-            _instance = null;
-        }
-    }
+			Task.WaitAll(_sendTasks.Select(t => t.AsTask()).ToArray());
+
+			_instance = null;
+		}
+	}
 }

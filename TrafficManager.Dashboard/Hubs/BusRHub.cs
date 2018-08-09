@@ -19,20 +19,19 @@ namespace TrafficManager.Dashboard.Hubs
         {
             if (!targetId.HasValue) return;
             var cmd = (SystemCommandEnum) commandEnumVal;
-
-	        var paramPairs = new SystemCommandParameters();
-
+			
+	        int? newPref = null;
 			
             if (cmd == SystemCommandEnum.UpdateRoutePreference)
-                paramPairs.NewPreference = int.Parse(arg);
-
-	        paramPairs.TargetId = targetId.Value;
-
-            _transporter.SendCommand("PeiceOfPiDevice", new SystemCommandModel
+	            newPref = int.Parse(arg);
+			
+            _transporter.SendCommand("PieceOfPiDevice", new SystemCommandModel
             {
                 Name = ((SystemCommandEnum)commandEnumVal).ToString(),
+				MessageId = Guid.NewGuid(),
                 CreatedTime = DateTime.UtcNow,
-				Parameters = paramPairs
+				TargetId = targetId.Value,
+				NewPreference = newPref
             });
         }
     }

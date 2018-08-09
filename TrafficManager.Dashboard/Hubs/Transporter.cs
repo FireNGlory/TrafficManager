@@ -31,7 +31,7 @@ namespace TrafficManager.Dashboard.Hubs
 
 			//HACK: Get this in to config!
 			const string connectionString =
-				"HostName=TrafficManager.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=d8fItWBBB2VlF5OxZn8cqwdBaw2MJUqtE4Lqoz5JhL8="; //"HostName=PieceOfPiHub.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=jIUi1GLea8dDnwSu1j5N5fM/aJN7E4ubKxoRxUgUbGo=";
+				"HostName=FloProUS.azure-devices.net;SharedAccessKeyName=service;SharedAccessKey=mDDgyLphcax+u2pa/Xn4DWzp/nrhia39JHjUdqqSuNg==";
 			const string iotHubToClientEndpoint = "messages/events";
 
 			_serviceClt = ServiceClient.CreateFromConnectionString(connectionString);

@@ -12,9 +12,9 @@ namespace TrafficManager.Devices.Configuration
             //Default Configuration
             _myConfig = new ConfigurationSettings
             {
-                AzureIoTHubUri = "TrafficManager.azure-devices.net",
-                AzureIoTDeviceId = "PeiceOfPiDevice",
-                AzureIoTDeviceKey = "aTcFbRvVs5CoyOHNQbucVUbNwjJO0zQVH5TuI1pYCaM=", // "HSL5jVUOhrLwd0Mf0fCdqA==",
+                AzureIoTHubUri = "FloProUS.azure-devices.net",
+                AzureIoTDeviceId = "PieceOfPiDevice",
+                AzureIoTDeviceKey = "6lDyZ4tGzOUm41Ge1dXqDbCfw0sKfocmyh+FxWcTf5Y==", 
 
                 IntersectionId = new Guid("f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97"),
 

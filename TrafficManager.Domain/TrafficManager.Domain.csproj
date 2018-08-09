@@ -107,7 +107,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Aggregates\SystemCommand.cs" />
     <Compile Include="EventHandlers\EventHandlers.cs" />
     <Compile Include="IDomainDevice.cs" />
     <Compile Include="Models\AllInOneModel.cs" />

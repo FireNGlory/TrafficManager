@@ -1,58 +1,58 @@
 ﻿@{
-    ViewBag.Title = "TrafficManager - Graphical Demo";
+  ViewBag.Title = "TrafficManager - Graphical Demo";
 }
 <style>
-    .myconsole {
-        position: absolute;
-        top: 580px;
-        left: 10px;
-        width: 240px;
-        height: 210px;
-        overflow-y: scroll;
-        background: black;
-        color: greenyellow;
-        padding-left: 4px;
-        margin-right: 2px;
-        font-size: .8em;
-        font-family: monospace;
-    }
+   .myconsole {
+     position: absolute;
+     top: 580px;
+     left: 10px;
+     width: 240px;
+     height: 210px;
+     overflow-y: scroll;
+     background: black;
+     color: greenyellow;
+     padding-left: 4px;
+     margin-right: 2px;
+     font-size: .8em;
+     font-family: monospace;
+   }
 
-    .btn-full {
-        width: 100%;
-    }
+  .btn-full {
+    width: 100%;
+  }
 
-    .intersectionContainer {
-        padding: 0 0 0 0 !important;
-        height: 800px !important;
-        width: 800px !important;
-        background-image: url('../../Content/4way.png');
-    }
+  .intersectionContainer {
+    padding: 0 0 0 0 !important;
+    height: 800px !important;
+    width: 800px !important;
+    background-image: url('../../Content/4way.png');
+  }
 
-    .light {
-        position: absolute;
-        padding: 0 0 0 0 !important;
-        height: 65px !important;
-        width: 65px !important;
-        display: none;
-    }
+  .light {
+    position: absolute;
+    padding: 0 0 0 0 !important;
+    height: 65px !important;
+    width: 65px !important;
+    display: none;
+  }
 
-    .northGreen {
-        background-image: url('../../Content/green.png');
-        top: 15px;
-        left: 307px;
-    }
+  .northGreen {
+    background-image: url('../../Content/green.png');
+    top: 15px;
+    left: 307px;
+  }
 
-    .northYellow {
-        background-image: url('../../Content/yellow.png');
-        top: 83px;
-        left: 307px;
-    }
+  .northYellow {
+    background-image: url('../../Content/yellow.png');
+    top: 83px;
+    left: 307px;
+  }
 
-    .northRed {
-        background-image: url('../../Content/red.png');
-        top: 151px;
-        left: 307px;
-    }
+  .northRed {
+    background-image: url('../../Content/red.png');
+    top: 151px;
+    left: 307px;
+  }
 
   .southGreen {
     background-image: url('../../Content/green.png');
@@ -60,11 +60,11 @@
     left: 456px;
   }
 
-    .southYellow {
-        background-image: url('../../Content/yellow.png');
-        top: 644px;
-        left: 456px;
-    }
+  .southYellow {
+    background-image: url('../../Content/yellow.png');
+    top: 644px;
+    left: 456px;
+  }
 
   .southRed {
     background-image: url('../../Content/red.png');
@@ -72,293 +72,316 @@
     left: 456px;
   }
 
-    .eastGreen {
-        background-image: url('../../Content/green.png');
-        top: 289px;
-        left: 725px;
-    }
+  .eastGreen {
+    background-image: url('../../Content/green.png');
+    top: 289px;
+    left: 725px;
+  }
 
-    .eastYellow {
-        background-image: url('../../Content/yellow.png');
-        top: 289px;
-        left: 657px;
-    }
+  .eastYellow {
+    background-image: url('../../Content/yellow.png');
+    top: 289px;
+    left: 657px;
+  }
 
-    .eastRed {
-        background-image: url('../../Content/red.png');
-        top: 289px;
-        left: 590px;
-    }
+  .eastRed {
+    background-image: url('../../Content/red.png');
+    top: 289px;
+    left: 590px;
+  }
 
-    .westGreen {
-        background-image: url('../../Content/green.png');
-        top: 444px;
-        left: 42px;
-    }
+  .westGreen {
+    background-image: url('../../Content/green.png');
+    top: 444px;
+    left: 42px;
+  }
 
-    .westYellow {
-        background-image: url('../../Content/yellow.png');
-        top: 444px;
-        left: 110px;
-    }
+  .westYellow {
+    background-image: url('../../Content/yellow.png');
+    top: 444px;
+    left: 110px;
+  }
 
-    .westRed {
-        background-image: url('../../Content/red.png');
-        top: 444px;
-        left: 179px;
-    }
+  .westRed {
+    background-image: url('../../Content/red.png');
+    top: 444px;
+    left: 179px;
+  }
 
-    .deviceDiv {
-        position: absolute;
-        background-color: antiquewhite;
-        padding: 0px 10px 5px 10px;
-    }
+  .deviceDiv {
+    position: absolute;
+    background-color: antiquewhite;
+    padding: 0px 10px 5px 10px;
+  }
 
-    .stateLabel {
-        background: black;
-        color: greenyellow;
-        padding-left: 4px;
-        padding-right: 4px;
-        margin-right: 2px;
-        font-size: .8em;
-        font-family: monospace;
-        cursor: pointer;
-    }
+  .stateLabel {
+    background: black;
+    color: greenyellow;
+    padding-left: 4px;
+    padding-right: 4px;
+    margin-right: 2px;
+    font-size: .8em;
+    font-family: monospace;
+    cursor: pointer;
+  }
 </style>
 <div class="row">
-    <div class="col-md-12">
-        <div class="intersectionContainer">
-            <div style="position: absolute; top: 20px; left: 10px; width: 230px;">
-                <button id="cmdSendStop" type="button" class="btn btn-danger btn-full">Stop Intersection</button>
-                <button id="cmdSendStart" type="button" class="btn btn-success btn-full">Start Intersection</button>
-                <button id="cmdShutdown" type="button" class="btn btn-warning btn-full">Shutdown Intersection</button>
-                <div>
-                    <div style="text-align: center;">
-                        <h4>Acitve Id</h4>
-                        <span id="activeId">Click state label to select</span>
-                    </div>
-                    <div class="pull-left">
-                        <button id="cmdBreakBulb" type="button" style="display: none;" class="btn btn-danger btn-full">
-                            Bulb
-                        </button>
-                    </div>
-                    <div class="pull-left">
-                        <button id="cmdBreakSensor" type="button" style="display: none;" class="btn btn-danger btn-full">
-                            Sensor
-                        </button>
-                    </div>
-                    <div class="pull-right">
-                        <button id="cmdFixIt" type="button" style="display: none;" class="btn btn-success btn-full">
-                            Repair
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="myconsole">
-
-            </div>
-            <div class="deviceDiv" style="top: 315px; left: 350px">
-                <h5>Intersection: 4-way</h5>
-                <div id="state-f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-
-            <div id="" class="deviceDiv" style="top: 600px; left: 266px;">
-                <h5>Route: North/South</h5>
-                <div id="state-47365541-2882-4814-b5f1-94361c09d58c" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-
-            <div class="deviceDiv" style="top: 200px; left: 380px;">
-                <h5>LampSet: North</h5>
-                <div id="state-0fc50ef3-ad24-4d63-b152-b712903e8607" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-
-            <div class="deviceDiv" style="top: 90px; left: 390px;">
-                <h5>Lamp: North</h5>
-                <div id="state-d22c0c30-35a3-439d-b505-2b395b87104e" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div id="8b6bd075-7576-43a2-adc8-4ec36f914297" class="light northGreen"></div>
-            <div id="state-8b6bd075-7576-43a2-adc8-4ec36f914297" class="stateLabel" style="top: 35px; left: 250px; position: absolute;">
-                Off
-            </div>
-            <div id="01478f65-93c7-46d9-be64-a55f383296f9" class="light northYellow"></div>
-            <div id="state-01478f65-93c7-46d9-be64-a55f383296f9" class="stateLabel" style="top: 105px; left: 250px; position: absolute;">
-                Off
-            </div>
-            <div id="bdd4c02b-11d3-4ed5-8d34-6ef2e85c804b" class="light northRed"></div>
-            <div id="state-bdd4c02b-11d3-4ed5-8d34-6ef2e85c804b" class="stateLabel" style="top: 175px; left: 250px; position: absolute;">
-                Off
-            </div>
-
-
-            <div class="deviceDiv" style="top: 490px; left: 380px;">
-                <h5>LampSet: South</h5>
-                <div id="state-edf14820-c265-44af-a8b3-b00be4ea4106" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div class="deviceDiv" style="top: 690px; left: 330px;">
-                <h5>Lamp: South</h5>
-                <div id="state-a2742869-6852-4e03-8c1a-32673ea1c13f" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div id="249f351b-b43d-4864-bad7-d9f19cd7c161" class="light southGreen"></div>
-            <div id="state-249f351b-b43d-4864-bad7-d9f19cd7c161" class="stateLabel" style="top: 740px; left: 550px; position: absolute;">
-                Off
-            </div>
-            <div id="a8fbf9ca-aab6-4f84-95f4-f8c1134cacb5" class="light southYellow"></div>
-            <div id="state-a8fbf9ca-aab6-4f84-95f4-f8c1134cacb5" class="stateLabel" style="top: 670px; left: 550px; position: absolute;">
-                Off
-            </div>
-            <div id="16a97bd3-0661-47d4-a314-e7ab62162fca" class="light southRed"></div>
-            <div id="state-16a97bd3-0661-47d4-a314-e7ab62162fca" class="stateLabel" style="top: 600px; left: 550px; position: absolute;">
-                Off
-            </div>
-
-            <div class="deviceDiv" style="top: 450px; left: 630px;">
-                <h5>Route: East/West</h5>
-                <div id="state-bfbe2082-4be5-427b-9f2c-fb5e4692ceec" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-
-            <div class="deviceDiv" style="top: 360px; left: 210px;">
-                <h5>LampSet: West</h5>
-                <div id="state-be894b4e-454b-4a2e-b729-8d2c422e9dff" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div class="deviceDiv" style="top: 370px; left: 40px;">
-                <h5>Lamp: West</h5>
-                <div id="state-3c8c9db3-cdc6-4a76-8b0a-06ba80a03932" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div id="c5ef56ca-a594-41bc-8c24-2655944a752b" class="light eastGreen"></div>
-            <div id="state-c5ef56ca-a594-41bc-8c24-2655944a752b" class="stateLabel" style="top: 255px; left: 740px; position: absolute;">
-                Off
-            </div>
-            <div id="0bd1fbe0-ded5-410d-8cb5-887111c01630" class="light eastYellow"></div>
-            <div id="state-0bd1fbe0-ded5-410d-8cb5-887111c01630" class="stateLabel" style="top: 255px; left: 673px; position: absolute;">
-                Off
-            </div>
-            <div id="3e48ed9c-813d-4cef-93d2-216f4d32fd1d" class="light eastRed"></div>
-            <div id="state-3e48ed9c-813d-4cef-93d2-216f4d32fd1d" class="stateLabel" style="top: 255px; left: 605px; position: absolute;">
-                Off
-            </div>
-
-            <div class="deviceDiv" style="top: 360px; left: 510px;">
-                <h5>LampSet: East</h5>
-                <div id="state-5581584e-3dae-4aa6-b690-f9d43bbf2b08" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div class="deviceDiv" style="top: 180px; left: 600px;">
-                <h5>Lamp: East</h5>
-                <div id="state-5555111f-d639-4b35-8de9-14b58b3e420c" class="stateLabel">
-                    Waiting...
-                </div>
-            </div>
-            <div id="03d9e044-6aee-46df-994b-0fe3fe5fefc5" class="light westGreen"></div>
-            <div id="state-03d9e044-6aee-46df-994b-0fe3fe5fefc5" class="stateLabel" style="top: 530px; left: 60px; position: absolute;">
-                Off
-            </div>
-            <div id="1b743ee7-d375-44a7-924f-9b7b0e070a95" class="light westYellow"></div>
-            <div id="state-1b743ee7-d375-44a7-924f-9b7b0e070a95" class="stateLabel" style="top: 530px; left: 129px; position: absolute;">
-                Off
-            </div>
-            <div id="dcce1d40-45c3-4edf-9023-73b5d9261886" class="light westRed"></div>
-            <div id="state-dcce1d40-45c3-4edf-9023-73b5d9261886" class="stateLabel" style="top: 530px; left: 200px; position: absolute;">
-                Off
-            </div>
+  <div class="col-md-12">
+    <div class="intersectionContainer">
+      <div style="position: absolute; top: 20px; left: 10px; width: 230px;">
+        <button id="cmdSendStop" type="button" class="btn btn-danger btn-full">Stop Intersection</button>
+        <button id="cmdSendStart" type="button" class="btn btn-success btn-full">Start Intersection</button>
+        <button id="cmdShutdown" type="button" class="btn btn-warning btn-full">Shutdown Intersection</button>
+        <div>
+          <div style="text-align: center;">
+            <h4>Acitve Id</h4>
+            <span id="activeId">Click state label to select</span>
+          </div>
+          <div class="pull-left">
+            <button id="cmdBreakBulb" type="button" style="display: none;" class="btn btn-danger btn-full">
+              Bulb
+            </button>
+          </div>
+          <div class="pull-left">
+            <button id="cmdBreakSensor" type="button" style="display: none;" class="btn btn-danger btn-full">
+              Sensor
+            </button>
+          </div>
+          <div class="pull-right">
+            <button id="cmdFixIt" type="button" style="display: none;" class="btn btn-success btn-full">
+              Repair
+            </button>
+          </div>
         </div>
+      </div>
+      <div class="myconsole">
+
+      </div>
+      <div class="deviceDiv" style="top: 315px; left: 350px">
+        <h5>Intersection: 4-way</h5>
+        <div id="state-f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+
+      <div id="" class="deviceDiv" style="top: 600px; left: 266px;">
+        <h5>Route: North/South</h5>
+        <div id="state-47365541-2882-4814-b5f1-94361c09d58c" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+
+      <div class="deviceDiv" style="top: 200px; left: 380px;">
+        <h5>LampSet: North</h5>
+        <div id="state-0fc50ef3-ad24-4d63-b152-b712903e8607" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+
+      <div class="deviceDiv" style="top: 90px; left: 390px;">
+        <h5>Lamp: North</h5>
+        <div id="state-d22c0c30-35a3-439d-b505-2b395b87104e" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div id="8b6bd075-7576-43a2-adc8-4ec36f914297" class="light northGreen"></div>
+      <div id="state-8b6bd075-7576-43a2-adc8-4ec36f914297" class="stateLabel" style="top: 35px; left: 250px; position: absolute;">
+        Off
+      </div>
+      <div id="01478f65-93c7-46d9-be64-a55f383296f9" class="light northYellow"></div>
+      <div id="state-01478f65-93c7-46d9-be64-a55f383296f9" class="stateLabel" style="top: 105px; left: 250px; position: absolute;">
+        Off
+      </div>
+      <div id="bdd4c02b-11d3-4ed5-8d34-6ef2e85c804b" class="light northRed"></div>
+      <div id="state-bdd4c02b-11d3-4ed5-8d34-6ef2e85c804b" class="stateLabel" style="top: 175px; left: 250px; position: absolute;">
+        Off
+      </div>
+
+
+      <div class="deviceDiv" style="top: 490px; left: 380px;">
+        <h5>LampSet: South</h5>
+        <div id="state-edf14820-c265-44af-a8b3-b00be4ea4106" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div class="deviceDiv" style="top: 690px; left: 330px;">
+        <h5>Lamp: South</h5>
+        <div id="state-a2742869-6852-4e03-8c1a-32673ea1c13f" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div id="249f351b-b43d-4864-bad7-d9f19cd7c161" class="light southGreen"></div>
+      <div id="state-249f351b-b43d-4864-bad7-d9f19cd7c161" class="stateLabel" style="top: 740px; left: 550px; position: absolute;">
+        Off
+      </div>
+      <div id="a8fbf9ca-aab6-4f84-95f4-f8c1134cacb5" class="light southYellow"></div>
+      <div id="state-a8fbf9ca-aab6-4f84-95f4-f8c1134cacb5" class="stateLabel" style="top: 670px; left: 550px; position: absolute;">
+        Off
+      </div>
+      <div id="16a97bd3-0661-47d4-a314-e7ab62162fca" class="light southRed"></div>
+      <div id="state-16a97bd3-0661-47d4-a314-e7ab62162fca" class="stateLabel" style="top: 600px; left: 550px; position: absolute;">
+        Off
+      </div>
+
+      <div class="deviceDiv" style="top: 450px; left: 630px;">
+        <h5>Route: East/West</h5>
+        <div id="state-bfbe2082-4be5-427b-9f2c-fb5e4692ceec" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+
+      <div class="deviceDiv" style="top: 360px; left: 210px;">
+        <h5>LampSet: West</h5>
+        <div id="state-be894b4e-454b-4a2e-b729-8d2c422e9dff" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div class="deviceDiv" style="top: 370px; left: 40px;">
+        <h5>Lamp: West</h5>
+        <div id="state-3c8c9db3-cdc6-4a76-8b0a-06ba80a03932" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div id="c5ef56ca-a594-41bc-8c24-2655944a752b" class="light eastGreen"></div>
+      <div id="state-c5ef56ca-a594-41bc-8c24-2655944a752b" class="stateLabel" style="top: 255px; left: 740px; position: absolute;">
+        Off
+      </div>
+      <div id="0bd1fbe0-ded5-410d-8cb5-887111c01630" class="light eastYellow"></div>
+      <div id="state-0bd1fbe0-ded5-410d-8cb5-887111c01630" class="stateLabel" style="top: 255px; left: 673px; position: absolute;">
+        Off
+      </div>
+      <div id="3e48ed9c-813d-4cef-93d2-216f4d32fd1d" class="light eastRed"></div>
+      <div id="state-3e48ed9c-813d-4cef-93d2-216f4d32fd1d" class="stateLabel" style="top: 255px; left: 605px; position: absolute;">
+        Off
+      </div>
+
+      <div class="deviceDiv" style="top: 360px; left: 510px;">
+        <h5>LampSet: East</h5>
+        <div id="state-5581584e-3dae-4aa6-b690-f9d43bbf2b08" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div class="deviceDiv" style="top: 180px; left: 600px;">
+        <h5>Lamp: East</h5>
+        <div id="state-5555111f-d639-4b35-8de9-14b58b3e420c" class="stateLabel">
+          Waiting...
+        </div>
+      </div>
+      <div id="03d9e044-6aee-46df-994b-0fe3fe5fefc5" class="light westGreen"></div>
+      <div id="state-03d9e044-6aee-46df-994b-0fe3fe5fefc5" class="stateLabel" style="top: 530px; left: 60px; position: absolute;">
+        Off
+      </div>
+      <div id="1b743ee7-d375-44a7-924f-9b7b0e070a95" class="light westYellow"></div>
+      <div id="state-1b743ee7-d375-44a7-924f-9b7b0e070a95" class="stateLabel" style="top: 530px; left: 129px; position: absolute;">
+        Off
+      </div>
+      <div id="dcce1d40-45c3-4edf-9023-73b5d9261886" class="light westRed"></div>
+      <div id="state-dcce1d40-45c3-4edf-9023-73b5d9261886" class="stateLabel" style="top: 530px; left: 200px; position: absolute;">
+        Off
+      </div>
+
+      <div style="position: absolute; top: 600px; left: 590px; width: 220px;">
+        <button id="cmdSetEw" type="button" class="btn btn-primary btn-full">Set East/West</button>
+        <button id="cmdSetNs" type="button" class="btn btn-primary btn-full">Set North/South</button>
+        <div>
+          <span id="ewPref"></span>
+        </div>
+        <div>
+          <span id="nsPref"></span>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 @section scripts {
-    <script>
-        var my = {};
-        my.intersectionId = "f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97";
+  <script>
+    var my = {};
+    my.intersectionId = "f6f9747d-f68f-4e1c-a4b9-d9e85c41ba97";
 
-        $(function () {
-            my.busRHub = $.connection.busRHub;
+    $(function () {
+      my.busRHub = $.connection.busRHub;
 
-            my.busRHub.client.bulbChange = function (id, isOn) {
-                $("#" + id).toggle(isOn);
-            };
-            my.busRHub.client.stateChange = function (id, newState) {
-                $("#state-" + id).text(newState).hide().show(300);
-            };
-            my.busRHub.client.summaryUpdate = function (summary) {
-                var cnsl = $(".myconsole");
-                cnsl.append("<br/>" + summary.substr(32).replace("CurrentState: ", ""));
-                cnsl.scrollTop(cnsl[0].scrollHeight);
-            };
-            $.connection.hub.start();
-            
-            $("#cmdSendStop").click(my.stopIntersection);
-            $("#cmdSendStart").click(my.startIntersection);
-            $("#cmdShutdown").click(my.shutdownPi);
-            $(".stateLabel").click(my.setActive);
-            $("#cmdBreakBulb").click(my.breakBulb);
-            $("#cmdBreakSensor").click(my.breakSensor);
-            $("#cmdFixIt").click(my.fixDevice);
-        });
+      my.busRHub.client.bulbChange = function (id, isOn) {
+        $("#" + id).toggle(isOn);
+      };
+      my.busRHub.client.stateChange = function (id, newState) {
+        $("#state-" + id).text(newState).hide().show(300);
+      };
+      my.busRHub.client.summaryUpdate = function (summary) {
+        var cnsl = $(".myconsole");
+        cnsl.append("<br/>" + summary.substr(32).replace("CurrentState: ", ""));
+        cnsl.scrollTop(cnsl[0].scrollHeight);
+      };
+      $.connection.hub.start();
 
-        my.startIntersection = function () {
-            my.sendCommand(10010, my.intersectionId);
-        }
-        my.stopIntersection = function () {
-            my.sendCommand(10999, my.intersectionId);
-        }
-        my.getStatus = function (target) {
-            my.sendCommand(10020, target);
-        }
-        my.breakBulb = function () {
-            my.sendCommand(10810, $("#activeId").text());
-        }
-        my.breakSensor = function () {
-            my.sendCommand(10820, $("#activeId").text());
-        }
-        my.fixDevice = function () {
-            my.sendCommand(10040, $("#activeId").text());
-            my.sendCommand(10045, $("#activeId").text());
-        }
-        my.shutdownPi = function () {
-            my.sendCommand(19999, my.intersectionId);
-        }
+      $("#cmdSendStop").click(my.stopIntersection);
+      $("#cmdSendStart").click(my.startIntersection);
+      $("#cmdShutdown").click(my.shutdownPi);
+      $(".stateLabel").click(my.setActive);
+      $("#cmdBreakBulb").click(my.breakBulb);
+      $("#cmdBreakSensor").click(my.breakSensor);
+      $("#cmdFixIt").click(my.fixDevice);
+      $("#cmdSetEw").click(my.updatePreferenceEw);
+      $("#cmdSetNs").click(my.updatePreferenceNs);
+    });
 
-        my.sendCommand = function (cmdId, targetId, arg) {
-            my.busRHub.server.sendCommand($("#txbUsername").val(), cmdId, targetId, arg);
-        }
-        my.setActive = function() {
-            var that = $(this);
-            var id = that[0].id.substr(6);
-            $(".myconsole").text("");
-            my.getStatus(id);
-            $("#activeId").text(id);
-            $("#cmdBreakBulb").toggle(that.prev().hasClass("light"));
-            $("#cmdBreakSensor").toggle(that.prev().hasClass("light"));
-            $("#cmdFixIt").toggle(that.prev().hasClass("light"));
-        }
-    </script>
+    my.startIntersection = function () {
+      my.sendCommand(10010, my.intersectionId);
+    }
+    my.stopIntersection = function () {
+      my.sendCommand(10999, my.intersectionId);
+    }
+    my.getStatus = function (target) {
+      my.sendCommand(10020, target);
+    }
+    my.breakBulb = function () {
+      my.sendCommand(10810, $("#activeId").text());
+    }
+    my.breakSensor = function () {
+      my.sendCommand(10820, $("#activeId").text());
+    }
+    my.updatePreferenceNs = function () {
+      var input = prompt("Enter new preference metric");
+      my.sendCommand(10030, "47365541-2882-4814-b5f1-94361c09d58c", input);
+      $("#nsPref").text("North/South Preference: " + input);
+    }
+    my.updatePreferenceEw = function () {
+      var input = prompt("Enter new preference metric");
+      my.sendCommand(10030, "bfbe2082-4be5-427b-9f2c-fb5e4692ceec", input);
+      $("#ewPref").text("East/West Preference: " + input);
+    }
+    my.fixDevice = function () {
+      my.sendCommand(10040, $("#activeId").text());
+      my.sendCommand(10045, $("#activeId").text());
+    }
+    my.shutdownPi = function () {
+      my.sendCommand(19999, my.intersectionId);
+    }
+
+    my.sendCommand = function (cmdId, targetId, arg) {
+      my.busRHub.server.sendCommand($("#txbUsername").val(), cmdId, targetId, arg);
+    }
+    my.setActive = function () {
+      var that = $(this);
+      var id = that[0].id.substr(6);
+      $(".myconsole").text("");
+      my.getStatus(id);
+      $("#activeId").text(id);
+      $("#cmdBreakBulb").toggle(that.prev().hasClass("light"));
+      $("#cmdBreakSensor").toggle(that.prev().hasClass("light"));
+      $("#cmdFixIt").toggle(that.prev().hasClass("light"));
+    }
+  </script>
 }
 @*
-    BringOnline = 10010,
-    RequestStatus = 10020,
-    UpdateRoutePreference = 10030,
-    ReplaceBulb = 10040,
-    ReplaceSensor = 10045,
-    SimulateBulbFailure = 10810,
-    SimulateSensorFailure = 10820,
-    TakeOffline = 10999,
-    Shutdown = 19999
+  BringOnline = 10010,
+  RequestStatus = 10020,
+  UpdateRoutePreference = 10030,
+  ReplaceBulb = 10040,
+  ReplaceSensor = 10045,
+  SimulateBulbFailure = 10810,
+  SimulateSensorFailure = 10820,
+  TakeOffline = 10999,
+  Shutdown = 19999
 
 *@

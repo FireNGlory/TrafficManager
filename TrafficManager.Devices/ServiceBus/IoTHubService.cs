@@ -237,13 +237,11 @@ namespace TrafficManager.Devices.ServiceBus
             if (theEnum == SystemCommandEnum.None) return;
 
             var paramList = new List<KeyValuePair<string, object>>();
-
-	        if (theCmd.Parameters != null)
-	        {
-				paramList.Add(new KeyValuePair<string, object>("targetId", theCmd.Parameters.TargetId));
-				if (theCmd.Parameters.NewPreference.HasValue)
-					paramList.Add(new KeyValuePair<string, object>("preference", theCmd.Parameters.NewPreference));
-	        }
+			
+				paramList.Add(new KeyValuePair<string, object>("targetId", theCmd.TargetId));
+				if (theCmd.NewPreference.HasValue)
+					paramList.Add(new KeyValuePair<string, object>("preference", theCmd.NewPreference));
+	        
             CommandReceived?.Invoke(this, new CommandReceivedEventArgs
             {
                 Command = theEnum,
