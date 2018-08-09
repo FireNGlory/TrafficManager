@@ -3,11 +3,11 @@ using TrafficManager.Devices.Hardware.Base;
 
 namespace TrafficManager.Devices.Hardware
 {
-	public class Acs712CurrentSensor5A : CurrentSensorBase
+	public class Acs712CurrentSensor30A : CurrentSensorBase
 	{
 		private readonly int _myChannel;
 
-		public Acs712CurrentSensor5A(Guid id, int channel) : base(id)
+		public Acs712CurrentSensor30A(Guid id, int channel) : base(id)
 		{
 			_myChannel = channel;
 
@@ -15,7 +15,7 @@ namespace TrafficManager.Devices.Hardware
 			//If we haven't recorded a new current reading in 10 minutes we aren't working
 			InOpTolerance = TimeSpan.FromMinutes(10);
 			
-			Tolerance = 150; 
+			Tolerance = 50; 
 		}
 
 		public override void TakeReading(bool ignoreExceptions)

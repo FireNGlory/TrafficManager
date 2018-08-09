@@ -110,6 +110,7 @@
     <Compile Include="Configuration\ConfigurationSettings.cs" />
     <Compile Include="Configuration\IConfigService.cs" />
     <Compile Include="Configuration\InMemoryConfigService.cs" />
+    <Compile Include="Hardware\Acs712CurrentSensor30A.cs" />
     <Compile Include="Hardware\Base\BulbBase.cs" />
     <Compile Include="Hardware\Base\CurrentSensorBase.cs" />
     <Compile Include="Hardware\Mcp3208SpiDevice.cs" />

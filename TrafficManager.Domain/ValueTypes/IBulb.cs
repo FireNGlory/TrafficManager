@@ -9,7 +9,6 @@ namespace TrafficManager.Domain.ValueTypes
         event BulbCycledEvent BulbCycled;
         
         BulbTypeEnum BulbType { get; }
-        ICurrentSensor MyCurrentSensor { get; }
 
         Task<BulbStateEnum> GetState();
         Task<bool> TransitionToState(BulbStateEnum state);

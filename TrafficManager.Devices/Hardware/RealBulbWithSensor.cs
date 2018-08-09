@@ -12,7 +12,7 @@ namespace TrafficManager.Devices.Hardware
     {
         private readonly GpioPin _gpioPin;
 
-        public RealBulbWithSensor(Guid id, BulbTypeEnum bulbType, ICurrentSensor currentSensor, GpioPin gpioPin) : base(id, bulbType, currentSensor)
+        public RealBulbWithSensor(Guid id, BulbTypeEnum bulbType, GpioPin gpioPin) : base(id, bulbType)
         {
 
             _gpioPin = gpioPin;
@@ -43,7 +43,7 @@ namespace TrafficManager.Devices.Hardware
             var actualState = await GetState();
 */
 
-	        CurrentState = newState;
+	        if (CurrentState != BulbStateEnum.InOperable) CurrentState = newState;
             if (oldState != newState)
                 OnStateChanged(oldState, newState);
 

@@ -9,229 +9,258 @@ using TrafficManager.Domain.ValueTypes;
 
 namespace TrafficManager.Devices.Logical
 {
-    public class ThreeLightLamp : ILamp
-    {
-        public event StateChangedEvent StateChanged;
+	public class ThreeLightLamp : ILamp
+	{
+		public event StateChangedEvent StateChanged;
 
-        public Guid Id { get; }
-        public ICollection<IBulb> Bulbs { get; }
+		public ICurrentSensor CurrentSensor { get; }
 
-        private bool _iAmTransitioning;
+		public Guid Id { get; }
+		public ICollection<IBulb> Bulbs { get; }
 
-        public ThreeLightLamp(Guid id, ICollection<IBulb> bulbs)
-        {
-            Id = id;
-            Bulbs = bulbs;
-        }
+		private bool _iAmTransitioning;
 
-        public Task<LampStateEnum> GetState()
-        {
-            return Task.Run(() =>
-            {
-                if (_iAmTransitioning) return LampStateEnum.Transitioning;
+		public ThreeLightLamp(Guid id, ICollection<IBulb> bulbs, ICurrentSensor currentSensor)
+		{
+			Id = id;
+			Bulbs = bulbs;
+			CurrentSensor = currentSensor;
+		}
 
-                var t = new[]
-                {
-                    GetRedLight().GetState(),
-                    GetYellowLight().GetState(),
-                    GetGreenLight().GetState()
-                };
+		public Task<LampStateEnum> GetState()
+		{
+			return Task.Run(() =>
+			{
+				if (_iAmTransitioning) return LampStateEnum.Transitioning;
 
-                Task.WaitAll(t);
+				var t = new[]
+				{
+					GetRedLight().GetState(),
+					GetYellowLight().GetState(),
+					GetGreenLight().GetState()
+				};
 
-                var stats = new Dictionary<string, BulbStateEnum>
-                {
-                    {"r" , t[0].Result},
-                    {"y" , t[1].Result},
-                    {"g" , t[2].Result}
-                };
+				Task.WaitAll(t);
 
-                //If bulbs are broke the lamp is broke
-                if (stats.Any(s => s.Value == BulbStateEnum.InOperable))
-                    return LampStateEnum.InOperable;
+				var stats = new Dictionary<string, BulbStateEnum>
+				{
+					{"r" , t[0].Result},
+					{"y" , t[1].Result},
+					{"g" , t[2].Result}
+				};
 
-                //If a bulb is in transition the lamp is
-                if (stats.Any(s => s.Value == BulbStateEnum.Transitioning))
-                    return LampStateEnum.Transitioning;
+				//If bulbs are broke the lamp is broke
+				if (stats.Any(s => s.Value == BulbStateEnum.InOperable))
+					return LampStateEnum.InOperable;
 
-                //Critical invalid state if multiple bulbs are on
-                if (stats.Count(s => s.Value == BulbStateEnum.On || s.Value == BulbStateEnum.AssumedOn) != 1)
-                    return LampStateEnum.CriticalMalfunction;
+				//If a bulb is in transition the lamp is
+				if (stats.Any(s => s.Value == BulbStateEnum.Transitioning))
+					return LampStateEnum.Transitioning;
 
-                //Not the job of the lamp to report the broken current sensor on a bulb. Treat assumed values as real
-                if (stats["r"] == BulbStateEnum.AssumedOn || stats["r"] == BulbStateEnum.On)
-                    return LampStateEnum.Stop;
-                if (stats["y"] == BulbStateEnum.AssumedOn || stats["y"] == BulbStateEnum.On)
-                    return LampStateEnum.Caution;
-                if (stats["g"] == BulbStateEnum.AssumedOn || stats["g"] == BulbStateEnum.On)
-                    return LampStateEnum.Go;
+				//Critical invalid state if multiple bulbs are on
+				if (stats.Count(s => s.Value == BulbStateEnum.On || s.Value == BulbStateEnum.AssumedOn) != 1)
+					return LampStateEnum.CriticalMalfunction;
 
-                //Unhandled state... Critical issue 
-                return LampStateEnum.CriticalMalfunction;
-            });
-        }
+				//Not the job of the lamp to report the broken current sensor on a bulb. Treat assumed values as real
+				if (stats["r"] == BulbStateEnum.AssumedOn || stats["r"] == BulbStateEnum.On)
+					return LampStateEnum.Stop;
+				if (stats["y"] == BulbStateEnum.AssumedOn || stats["y"] == BulbStateEnum.On)
+					return LampStateEnum.Caution;
+				if (stats["g"] == BulbStateEnum.AssumedOn || stats["g"] == BulbStateEnum.On)
+					return LampStateEnum.Go;
 
-        public Task<DeviceSummary> GetSummary()
-        {
-            return Task.Run(() =>
-            {
-                var tState = GetState();
-                var bulbSummaries = new List<DeviceSummary>();
-                var hasMalfunction = false;
+				//Unhandled state... Critical issue 
+				return LampStateEnum.CriticalMalfunction;
+			});
+		}
 
-                Parallel.ForEach(Bulbs, (bulb, state) =>
-                {
-                    var badBulb = false;
-                    var theState = bulb.GetState().Result;
-                    switch (theState)
-                    {
-                        case BulbStateEnum.AssumedOff:
-                        case BulbStateEnum.AssumedOn:
-                        case BulbStateEnum.InOperable:
-                            hasMalfunction = true;
-                            badBulb = true;
-                            break;
-                    }
-                    bulbSummaries.Add(new DeviceSummary
-                    {
-                        DeviceId = bulb.Id,
-                        CurrentState = (int)theState,
-                        HasMalfunction = badBulb
-                    });
-                });
+		public Task<DeviceSummary> GetSummary()
+		{
+			return Task.Run(() =>
+			{
+				var tState = GetState();
+				var bulbSummaries = new List<DeviceSummary>();
+				var hasMalfunction = false;
 
-                var ret = new DeviceSummary
-                {
-                    DeviceId = Id,
-                    HasMalfunction = hasMalfunction,
-                    CurrentState = (int)tState.Result,
-                    ChildSummaries = bulbSummaries
-                };
+				Parallel.ForEach(Bulbs, (bulb, state) =>
+				{
+					var badBulb = false;
+					var theState = bulb.GetState().Result;
+					switch (theState)
+					{
+						case BulbStateEnum.AssumedOff:
+						case BulbStateEnum.AssumedOn:
+						case BulbStateEnum.InOperable:
+							hasMalfunction = true;
+							badBulb = true;
+							break;
+					}
+					bulbSummaries.Add(new DeviceSummary
+					{
+						DeviceId = bulb.Id,
+						CurrentState = (int)theState,
+						HasMalfunction = badBulb
+					});
+				});
 
-                return ret;
-            });
-        }
+				var ret = new DeviceSummary
+				{
+					DeviceId = Id,
+					HasMalfunction = hasMalfunction,
+					CurrentState = (int)tState.Result,
+					ChildSummaries = bulbSummaries
+				};
 
-        public async Task<bool> TransitionToState(LampStateEnum requestedState)
-        {
-            var ret = true;
+				return ret;
+			});
+		}
 
-            //Is this a valid request?
-            if (requestedState != LampStateEnum.Go && requestedState != LampStateEnum.Caution && requestedState != LampStateEnum.Stop)
-                throw new Exception("You can only request transitions to Go, Caution and Stop");
+		public async Task<bool> TransitionToState(LampStateEnum requestedState)
+		{
+			var ret = true;
 
-            var oldState = await GetState();
+			//Is this a valid request?
+			if (requestedState != LampStateEnum.Go && requestedState != LampStateEnum.Caution && requestedState != LampStateEnum.Stop)
+				throw new Exception("You can only request transitions to Go, Caution and Stop");
 
-            //If it was transitioning, lets wait a little bit
-            var i = 0;
-            while (i++ < 10 && oldState == LampStateEnum.Transitioning)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(100));
-                oldState = await GetState();
-            }
+			var oldState = await GetState();
 
-            //Are we in a valid state to start a transition?
-            if (oldState == LampStateEnum.CriticalMalfunction || oldState == LampStateEnum.Transitioning)
-                ret = false;
-            
-            //We have to go through caution before we go from green to red
-            if (oldState == LampStateEnum.Go && requestedState != LampStateEnum.Caution)
-                ret = false;
+			//If it was transitioning, lets wait a little bit
+			var i = 0;
+			while (i++ < 10 && oldState == LampStateEnum.Transitioning)
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(100));
+				oldState = await GetState();
+			}
 
-            _iAmTransitioning = true;
+			//Are we in a valid state to start a transition?
+			if (oldState == LampStateEnum.CriticalMalfunction || oldState == LampStateEnum.Transitioning)
+				ret = false;
 
-            //Lat's restrict to proper transitions. InOperable is likely the bad bulb bubbling up. Try requested transition.
-            if (ret && (oldState == LampStateEnum.Go || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Caution)
-                ret = await DoTransitionToCaution();
-            else if (ret && (oldState == LampStateEnum.Caution || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Stop)
-                ret = await DoTransitionToStop();
-            else if (ret && (oldState == LampStateEnum.Stop || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Go)
-                ret = await DoTransitionToGo();
-            else
-                ret = false;
+			//We have to go through caution before we go from green to red
+			if (oldState == LampStateEnum.Go && requestedState != LampStateEnum.Caution)
+				ret = false;
 
-            //Let's clean up. finish the transition and raise state change if necessary
-            _iAmTransitioning = false;
+			_iAmTransitioning = true;
 
-            var newState = await GetState();
+			//Lat's restrict to proper transitions. InOperable is likely the bad bulb bubbling up. Try requested transition.
+			if (ret && (oldState == LampStateEnum.Go || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Caution)
+				ret = await DoTransitionToCaution();
+			else if (ret && (oldState == LampStateEnum.Caution || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Stop)
+				ret = await DoTransitionToStop();
+			else if (ret && (oldState == LampStateEnum.Stop || oldState == LampStateEnum.InOperable) && requestedState == LampStateEnum.Go)
+				ret = await DoTransitionToGo();
+			else
+				ret = false;
 
-            if (oldState != newState) OnStateChanged(oldState, newState);
+			//Let's clean up. finish the transition and raise state change if necessary
+			_iAmTransitioning = false;
 
-            return ret;
-        }
+			var newState = await GetState();
 
-        protected virtual void OnStateChanged(LampStateEnum oldState, LampStateEnum newState)
-        {
-            StateChanged?.Invoke(this, new StateChangedEventArgs
-            {
-                SourceId = Id, OldState = (int) oldState, NewState = (int) newState, SourceTimestamp = DateTime.UtcNow
-            });
-        }
+			TestBulb(requestedState);
 
-        private async Task<bool> DoTransitionToGo()
-        {
-            var redLight = GetRedLight();
+			if (oldState != newState) OnStateChanged(oldState, newState);
 
-            if (await redLight.GetState() == BulbStateEnum.InOperable)
-                return await GetGreenLight().TransitionToState(BulbStateEnum.On);
+			return ret;
+		}
 
-            if (!await redLight.TransitionToState(BulbStateEnum.Off))
-                return false;
+		protected virtual void OnStateChanged(LampStateEnum oldState, LampStateEnum newState)
+		{
+			StateChanged?.Invoke(this, new StateChangedEventArgs
+			{
+				SourceId = Id,
+				OldState = (int)oldState,
+				NewState = (int)newState,
+				SourceTimestamp = DateTime.UtcNow
+			});
+		}
 
-            return await GetGreenLight().TransitionToState(BulbStateEnum.On);
-        }
+		private async Task<bool> DoTransitionToGo()
+		{
+			var redLight = GetRedLight();
 
-        private async Task<bool> DoTransitionToStop()
-        {
-            var yellowLight = GetYellowLight();
+			if (await redLight.GetState() == BulbStateEnum.InOperable)
+				return await GetGreenLight().TransitionToState(BulbStateEnum.On);
 
-            if (await yellowLight.GetState() == BulbStateEnum.InOperable)
-                return await GetRedLight().TransitionToState(BulbStateEnum.On);
+			if (!await redLight.TransitionToState(BulbStateEnum.Off))
+				return false;
 
-            if (!await yellowLight.TransitionToState(BulbStateEnum.Off))
-                return false;
+			return await GetGreenLight().TransitionToState(BulbStateEnum.On);
+		}
 
-            return await GetRedLight().TransitionToState(BulbStateEnum.On);
-        }
+		private async Task<bool> DoTransitionToStop()
+		{
+			var yellowLight = GetYellowLight();
 
-        private async Task<bool> DoTransitionToCaution()
-        {
-            var greenLight = GetGreenLight();
+			if (await yellowLight.GetState() == BulbStateEnum.InOperable)
+				return await GetRedLight().TransitionToState(BulbStateEnum.On);
 
-            if (await greenLight.GetState() == BulbStateEnum.InOperable)
-                return await GetYellowLight().TransitionToState(BulbStateEnum.On);
+			if (!await yellowLight.TransitionToState(BulbStateEnum.Off))
+				return false;
 
-            if (!await greenLight.TransitionToState(BulbStateEnum.Off))
-                return false;
+			return await GetRedLight().TransitionToState(BulbStateEnum.On);
+		}
 
-            return await GetYellowLight().TransitionToState(BulbStateEnum.On);
-        }
+		private async Task<bool> DoTransitionToCaution()
+		{
+			var greenLight = GetGreenLight();
 
-        private IBulb GetRedLight()
-        {
-            var ret = Bulbs.FirstOrDefault(b => b.BulbType == BulbTypeEnum.Red);
+			if (await greenLight.GetState() == BulbStateEnum.InOperable)
+				return await GetYellowLight().TransitionToState(BulbStateEnum.On);
 
-            if (ret == null)
-                throw new Exception("A lamp must at least have a red, yellow and green bulb");
-            return ret;
-        }
+			if (!await greenLight.TransitionToState(BulbStateEnum.Off))
+				return false;
 
-        private IBulb GetGreenLight()
-        {
-            var ret = Bulbs.FirstOrDefault(b => b.BulbType == BulbTypeEnum.Green);
+			return await GetYellowLight().TransitionToState(BulbStateEnum.On);
+		}
 
-            if (ret == null)
-                throw new Exception("A lamp must at least have a red, yellow and green bulb");
-            return ret;
-        }
+		private Task TestBulb(LampStateEnum currentState)
+		{
+			return Task.Run(() =>
+			{
+				if (CurrentSensor.GetState().Result != CurrentSensorStateEnum.Flowing)
+				{
+					var badBulb = Bulbs.FirstOrDefault(b => b.GetState().Result == BulbStateEnum.On);
+					badBulb?.MarkInOp(true);
+				}
+				else
+				{
+					var badBulb = Bulbs.FirstOrDefault(b => b.GetState().Result == BulbStateEnum.InOperable);
+					if (badBulb == null) return;
+					if (badBulb.BulbType == BulbTypeEnum.Green && currentState == LampStateEnum.Go
+						|| badBulb.BulbType == BulbTypeEnum.Yellow && currentState == LampStateEnum.Caution
+					    || badBulb.BulbType == BulbTypeEnum.Red && currentState == LampStateEnum.Stop)
+						badBulb.MarkInOp(false);
+				}
+			});
 
-        private IBulb GetYellowLight()
-        {
-            var ret = Bulbs.FirstOrDefault(b => b.BulbType == BulbTypeEnum.Yellow);
+		}
+		private IBulb GetRedLight()
+		{
+			var ret = Bulbs.FirstOrDefault(b => b.BulbType == BulbTypeEnum.Red);
 
-            if (ret == null)
-                throw new Exception("A lamp must at least have a red, yellow and green bulb");
-            return ret;
-        }
-    }
+			if (ret == null)
+				throw new Exception("A lamp must at least have a red, yellow and green bulb");
+			return ret;
+		}
+
+		private IBulb GetGreenLight()
+		{
+			var ret = Bulbs.FirstOrDefault(b => b.BulbType == BulbTypeEnum.Green);
+
+			if (ret == null)
+				throw new Exception("A lamp must at least have a red, yellow and green bulb");
+			return ret;
+		}
+
+		private IBulb GetYellowLight()
+		{
+			var ret = Bulbs.FirstOrDefault(b => b.BulbType == BulbTypeEnum.Yellow);
+
+			if (ret == null)
+				throw new Exception("A lamp must at least have a red, yellow and green bulb");
+			return ret;
+		}
+	}
 }

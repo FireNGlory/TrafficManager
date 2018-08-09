@@ -7,6 +7,7 @@ namespace TrafficManager.Domain.ValueTypes
 {
     public interface ILamp : IDomainDevice
     {
+	    ICurrentSensor CurrentSensor { get; }
         ICollection<IBulb> Bulbs { get; }
 
         Task<LampStateEnum> GetState();

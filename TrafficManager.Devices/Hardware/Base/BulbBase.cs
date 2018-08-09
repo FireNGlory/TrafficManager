@@ -18,17 +18,15 @@ namespace TrafficManager.Devices.Hardware.Base
 	    protected BulbStateEnum CurrentState;
         private readonly Stopwatch _usageTimer;
 
-        public BulbBase(Guid id, BulbTypeEnum bulbType, ICurrentSensor currentSensor)
+        public BulbBase(Guid id, BulbTypeEnum bulbType)
         {
             Id = id;
             BulbType = bulbType;
-            MyCurrentSensor = currentSensor;
             _usageTimer = new Stopwatch();
         }
 
         public Guid Id { get; }
         public BulbTypeEnum BulbType { get; }
-        public ICurrentSensor MyCurrentSensor { get; }
 
         public Task<BulbStateEnum> GetState()
         {
@@ -61,7 +59,7 @@ namespace TrafficManager.Devices.Hardware.Base
 
             ImBroken = broken;
 
-            var newState = GetState().Result;
+            var newState = broken? BulbStateEnum.InOperable : BulbStateEnum.On;
 
             if (newState != oldState)
                 OnStateChanged(oldState, newState);

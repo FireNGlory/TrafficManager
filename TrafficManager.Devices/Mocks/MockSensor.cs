@@ -10,27 +10,14 @@ namespace TrafficManager.Devices.Mocks
             Tolerance = .01m;
             InOpTolerance = TimeSpan.FromHours(24);
             LastUpdate = DateTime.UtcNow;
-            CurrentValue = 0;
+            CurrentValue = 1;
         }
         public MockSensor(Guid id) : base(id)
         {
             Tolerance = .01m;
             InOpTolerance = TimeSpan.FromHours(24);
             LastUpdate = DateTime.UtcNow;
-            CurrentValue = 0;
-        }
-
-        public void SetValue(decimal value)
-        {
-            var oldState = GetState().Result;
-
-            LastUpdate = DateTime.UtcNow;
-            CurrentValue = value;
-
-            var newState = GetState().Result;
-
-            if (oldState != newState)
-                OnStateChanged(oldState, newState);
+            CurrentValue = 1;
         }
 
 	    public override void TakeReading(bool ignoreExceptions)

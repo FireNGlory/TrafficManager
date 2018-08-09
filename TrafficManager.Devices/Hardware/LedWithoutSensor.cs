@@ -12,7 +12,7 @@ namespace TrafficManager.Devices.Hardware
     {
         private readonly GpioPin _gpioPin;
 
-        public LedWithoutSensor(Guid id, BulbTypeEnum bulbType, Guid fakeSensorId, GpioPin gpioPin) : base(id, bulbType, new MockSensor(fakeSensorId))
+        public LedWithoutSensor(Guid id, BulbTypeEnum bulbType, GpioPin gpioPin) : base(id, bulbType)
         {
 
             _gpioPin = gpioPin;
@@ -35,12 +35,13 @@ namespace TrafficManager.Devices.Hardware
 
             _gpioPin.Write(newState == BulbStateEnum.On ? GpioPinValue.Low : GpioPinValue.High);
             
-            ((MockSensor)MyCurrentSensor).SetValue(newState == BulbStateEnum.On ? 1 : 0);
+/*            ((MockSensor)MyCurrentSensor).SetValue(newState == BulbStateEnum.On ? 1 : 0);
 
-            var actualState = await GetState();
+            var actualState = await GetState();*/
+	        CurrentState = newState;
 
             if (oldState != newState)
-                OnStateChanged(oldState, actualState);
+                OnStateChanged(oldState, newState);
 
             return true;
         }

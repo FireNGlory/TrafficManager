@@ -51,7 +51,6 @@ namespace TrafficManager.FlowProApp
         private IIntersection _theIntersection;
 
         private IEventService _eventor;
-        private Mcp3208SpiDevice _mcp3208;
         private CancellationTokenSource _tSource;
 
         public async void Run(IBackgroundTaskInstance taskInstance)
@@ -95,7 +94,7 @@ namespace TrafficManager.FlowProApp
 		    {
 			    while (true)
 			    {
-					Debug.Write($"{_mcp3208.GetSpread(0)}-{_mcp3208.GetSpread(1)}-{_mcp3208.GetSpread(2)}-{_mcp3208.GetSpread(3)}-{_mcp3208.GetSpread(4)} \n");
+					Debug.Write($"{Mcp3208SpiDevice.Instance().GetSpread(0)}-{Mcp3208SpiDevice.Instance().GetSpread(1)}-{Mcp3208SpiDevice.Instance().GetSpread(2)}-{Mcp3208SpiDevice.Instance().GetSpread(3)}\n");
 					Task.Delay(TimeSpan.FromMilliseconds(500)).Wait();
 			    }
 		    });
@@ -109,12 +108,12 @@ namespace TrafficManager.FlowProApp
 
             _eventor.SendLogMessage(_theIntersection.Id, false, 
                 $"Received {args.Command} command  for {targetId}", DateTime.UtcNow);
+			
 
-
-            var workBulb = _nBulbs.FirstOrDefault(b => b.Id == targetId)
-                       ?? _sBulbs.FirstOrDefault(b => b.Id == targetId)
-                       ?? _eBulbs.FirstOrDefault(b => b.Id == targetId)
-                       ?? _wBulbs.FirstOrDefault(b => b.Id == targetId);
+	        var workBulb = _nBulbs.FirstOrDefault(b => b.Id == targetId)
+	                       ?? _sBulbs.FirstOrDefault(b => b.Id == targetId)
+	                       ?? _eBulbs.FirstOrDefault(b => b.Id == targetId)
+	                       ?? _wBulbs.FirstOrDefault(b => b.Id == targetId);
 
             ITrafficRoute workRoute;
             switch (args.Command)
@@ -185,7 +184,7 @@ namespace TrafficManager.FlowProApp
                     break;
                 case SystemCommandEnum.ReplaceSensor:
                     if (workBulb == null) return;
-                    workBulb.MyCurrentSensor.MarkInOp(false);
+                    //workBulb.MyCurrentSensor.MarkInOp(false);
                     break;
                 case SystemCommandEnum.SimulateBulbFailure:
                     if (workBulb == null) return;
@@ -193,7 +192,7 @@ namespace TrafficManager.FlowProApp
                     break;
                 case SystemCommandEnum.SimulateSensorFailure:
                     if (workBulb == null) return;
-                    workBulb.MyCurrentSensor.MarkInOp(true);
+                    //workBulb.MyCurrentSensor.MarkInOp(true);
                     break;
                 case SystemCommandEnum.TakeOffline:
                     _theIntersection.Stop();
@@ -210,7 +209,6 @@ namespace TrafficManager.FlowProApp
         {
             try
             {
-	            _mcp3208 = new Mcp3208SpiDevice(0);
 
                 var gpio = GpioController.GetDefault();
 
@@ -269,38 +267,34 @@ namespace TrafficManager.FlowProApp
         {
             await Task.Run(() =>
             {
-                //My *north* lamp is the real bulb breakout... use different sensors by changing the commented line
-                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthRedBulbId, BulbTypeEnum.Red, //new MockSensor(cfg.NorthRedBulbSensorId),
-                    new Acs712CurrentSensor5A(cfg.NorthRedBulbSensorId, _mcp3208, 0), 
+                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthRedBulbId, BulbTypeEnum.Red, 
                     gpio.OpenPin(cfg.NorthRedBulbPinId)));
-                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthYellowBulbId, BulbTypeEnum.Yellow, //new MockSensor(cfg.NorthYellowBulbSensorId),
-                    new Acs712CurrentSensor5A(cfg.NorthYellowBulbSensorId, _mcp3208, 0), 
+                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthYellowBulbId, BulbTypeEnum.Yellow, 
                     gpio.OpenPin(cfg.NorthYellowBulbPinId)));
-                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthGreenBulbId, BulbTypeEnum.Green, //new MockSensor(cfg.NorthGreenBulbSensorId),
-                    new Acs712CurrentSensor5A(cfg.NorthGreenBulbSensorId, _mcp3208, 0), 
+                _nBulbs.Add(new RealBulbWithSensor(cfg.NorthGreenBulbId, BulbTypeEnum.Green, 
                     gpio.OpenPin(cfg.NorthGreenBulbPinId)));
 
 
                 //The rest of the lamps are simulated on the breadboard with LEDs
-                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthRedBulbId, BulbTypeEnum.Red, new Acs712CurrentSensor30A(cfg.SouthRedBulbSensorId, _mcp3208, 2),
+                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthRedBulbId, BulbTypeEnum.Red, 
                     gpio.OpenPin(cfg.SouthRedBulbPinId)));
-                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthYellowBulbId, BulbTypeEnum.Yellow, new Acs712CurrentSensor30A(cfg.SouthYellowBulbSensorId, _mcp3208, 2),
+                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthYellowBulbId, BulbTypeEnum.Yellow, 
                     gpio.OpenPin(cfg.SouthYellowBulbPinId)));
-                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthGreenBulbId, BulbTypeEnum.Green, new Acs712CurrentSensor30A(cfg.SouthGreenBulbSensorId, _mcp3208, 2),
+                _sBulbs.Add(new RealBulbWithSensor(cfg.SouthGreenBulbId, BulbTypeEnum.Green, 
                     gpio.OpenPin(cfg.SouthGreenBulbPinId)));
 
-                _eBulbs.Add(new RealBulbWithSensor(cfg.EastRedBulbId, BulbTypeEnum.Red,  new Acs712CurrentSensor30A(cfg.EastRedBulbSensorId, _mcp3208, 3),
+                _eBulbs.Add(new RealBulbWithSensor(cfg.EastRedBulbId, BulbTypeEnum.Red, 
                     gpio.OpenPin(cfg.EastRedBulbPinId)));
-                _eBulbs.Add(new RealBulbWithSensor(cfg.EastYellowBulbId, BulbTypeEnum.Yellow,  new Acs712CurrentSensor30A(cfg.EastYellowBulbSensorId, _mcp3208, 3),
+                _eBulbs.Add(new RealBulbWithSensor(cfg.EastYellowBulbId, BulbTypeEnum.Yellow, 
                     gpio.OpenPin(cfg.EastYellowBulbPinId)));
-                _eBulbs.Add(new RealBulbWithSensor(cfg.EastGreenBulbId, BulbTypeEnum.Green,  new Acs712CurrentSensor30A(cfg.EastGreenBulbSensorId, _mcp3208, 3),
+                _eBulbs.Add(new RealBulbWithSensor(cfg.EastGreenBulbId, BulbTypeEnum.Green, 
                     gpio.OpenPin(cfg.EastGreenBulbPinId)));
 
-                _wBulbs.Add(new RealBulbWithSensor(cfg.WestRedBulbId, BulbTypeEnum.Red,  new Acs712CurrentSensor5A(cfg.WestRedBulbSensorId, _mcp3208, 1),
+                _wBulbs.Add(new RealBulbWithSensor(cfg.WestRedBulbId, BulbTypeEnum.Red, 
                     gpio.OpenPin(cfg.WestRedBulbPinId)));
-                _wBulbs.Add(new RealBulbWithSensor(cfg.WestYellowBulbId, BulbTypeEnum.Yellow,  new Acs712CurrentSensor5A(cfg.WestYellowBulbSensorId, _mcp3208, 1),
+                _wBulbs.Add(new RealBulbWithSensor(cfg.WestYellowBulbId, BulbTypeEnum.Yellow, 
                     gpio.OpenPin(cfg.WestYellowBulbPinId)));
-                _wBulbs.Add(new RealBulbWithSensor(cfg.WestGreenBulbId, BulbTypeEnum.Green,  new Acs712CurrentSensor5A(cfg.WestGreenBulbSensorId, _mcp3208, 1),
+                _wBulbs.Add(new RealBulbWithSensor(cfg.WestGreenBulbId, BulbTypeEnum.Green, 
                     gpio.OpenPin(cfg.WestGreenBulbPinId)));
 
                 var t = new[]
@@ -315,7 +309,10 @@ namespace TrafficManager.FlowProApp
         private async Task BuildLamps(ConfigurationSettings cfg)
         {
             //My *north* lamp is the real bulb breakout 
-            _nLamp = new ThreeLightLamp(cfg.NorthLampId, _nBulbs);
+            _nLamp = new ThreeLightLamp(cfg.NorthLampId, _nBulbs,
+	            //new Acs712CurrentSensor5A(cfg.NorthRedBulbSensorId, 0)
+				new MockSensor()
+		        );
 
             _nLamp.TransitionToState(LampStateEnum.Go).Wait();
             await Task.Delay(200);
@@ -325,7 +322,10 @@ namespace TrafficManager.FlowProApp
             await Task.Delay(200);
 
             //The rest of the lamps are simulated on the breadboard with LEDs
-            _sLamp = new ThreeLightLamp(cfg.SouthLampId, _sBulbs);
+            _sLamp = new ThreeLightLamp(cfg.SouthLampId, _sBulbs,
+	            //new Acs712CurrentSensor30A(cfg.NorthRedBulbSensorId, 2)
+				new MockSensor()
+		        );
 
             _sLamp.TransitionToState(LampStateEnum.Go).Wait();
             await Task.Delay(200);
@@ -334,7 +334,10 @@ namespace TrafficManager.FlowProApp
             _sLamp.TransitionToState(LampStateEnum.Stop).Wait();
             await Task.Delay(200);
 
-            _eLamp = new ThreeLightLamp(cfg.EastLampId, _eBulbs);
+            _eLamp = new ThreeLightLamp(cfg.EastLampId, _eBulbs,
+	            //new Acs712CurrentSensor5A(cfg.NorthRedBulbSensorId, 3)
+	            new MockSensor()
+	            );
 
             _eLamp.TransitionToState(LampStateEnum.Caution).Wait();
             await Task.Delay(200);
@@ -343,7 +346,10 @@ namespace TrafficManager.FlowProApp
             _eLamp.TransitionToState(LampStateEnum.Go).Wait();
             await Task.Delay(200);
 
-            _wLamp = new ThreeLightLamp(cfg.WestLampId, _wBulbs);
+            _wLamp = new ThreeLightLamp(cfg.WestLampId, _wBulbs,
+	           // new Acs712CurrentSensor30A(cfg.NorthRedBulbSensorId, 1)
+				new MockSensor()
+		        );
 
             _wLamp.TransitionToState(LampStateEnum.Caution).Wait();
             await Task.Delay(200);
@@ -360,7 +366,7 @@ namespace TrafficManager.FlowProApp
             var sets = routes.SelectMany(r => r.LampSets).ToList();
             var lamps = sets.SelectMany(ls => ls.Lamps).ToList();
             var bulbs = lamps.SelectMany(l => l.Bulbs).ToList();
-            var sensors = bulbs.Select(b => b.MyCurrentSensor).ToList();
+            var sensors = lamps.Select(b => b.CurrentSensor).ToList();
 
 
             sensors.ForEach(s => s.StateChanged += (sender, args) =>
